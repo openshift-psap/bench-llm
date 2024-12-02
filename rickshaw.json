@@ -1,0 +1,33 @@
+{
+  "rickshaw-benchmark": {
+    "schema": {
+      "version": "2020.05.18"
+    }
+  },
+  "benchmark": "llm",
+  "controller": {
+    "post-script": "%bench-dir%/llm-post-process"
+  },
+  "client": {
+    "files-from-controller": [
+      {
+        "src": "%bench-dir%/random-but-same",
+        "dest": "/tmp/"
+      },
+      {
+        "src": "%bench-dir%/llm-get-runtime",
+        "dest": "/usr/bin/"
+      },
+      {
+        "src": "%bench-dir%/llm-base",
+        "dest": "/usr/bin/"
+      },
+      {
+        "src": "%bench-dir%/llm-client",
+        "dest": "/usr/bin/"
+      }
+    ],
+    "start": "llm-client",
+    "runtime": "llm-get-runtime"
+  }
+}

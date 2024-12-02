@@ -1,0 +1,247 @@
+#!/bin/bash
+# -*- mode: sh; indent-tabs-mode: nil; sh-basic-offset: 4 -*-
+# vim: autoindent tabstop=4 shiftwidth=4 expandtab softtabstop=4 filetype=bash
+exec >ilab-client-stderrout.txt
+exec 2>&1
+
+. /usr/bin/ilab-base || (echo "/usr/bin/ilab-base not found"; exit 1)
+
+workflow="train"
+nnodes=1
+train_profile="L40_x4"
+train_model_path="/home/models/granite-7b-redhat-lab"
+train_phased_mt_bench_judge="/root/.cache/instructlab/models/prometheus-8x7b-v2-0"
+train_phased_phase1_data="/home/data/training/jul19-knowledge-26k.jsonl"
+train_phased_phase1_num_epochs=2
+train_phased_phase1_samples_per_save=""
+train_phased_phase1_trim_samples=""
+train_phased_phase2_data="/usr/share/instructlab/sdg/datasets/skills.jsonl"
+train_phased_phase2_num_epochs=2
+train_phased_phase2_samples_per_save=""
+train_phased_phase2_trim_samples="15000"
+
+ilab --version | awk '{print $3}' >ilab-version.txt
+# 0.19.1 = rhelai 1.2
+# 0.18.3 = rhelai 1.1.0
+
+pwd=`/bin/pwd`
+pushd /opt/app-root/lib/python3.11/site-packages
+find . -name METADATA | cpio -pdumv $pwd/instructlab-site-packages-metadata
+popd
+
+longopts=""
+longopts+=" workflow:"
+longopts+=",sdg-num-cpus:"
+longopts+=",sdg-batch-size:"
+longopts+=",sdg-model:"
+longopts+=",sdg-gpus:"
+longopts+=",train-profile:"
+longopts+=",train-model-path:"
+longopts+=",train-phased-mt-bench-judge:"
+longopts+=",train-phased-phase1-data:"
+longopts+=",train-phased-phase1-num-epochs:"
+longopts+=",train-phased-phase1-samples-per-save:"
+longopts+=",train-phased-phase1-trim-data-samples:"
+longopts+=",train-phased-phase2-data:"
+longopts+=",train-phased-phase2-num-epochs:"
+longopts+=",train-phased-phase2-samples-per-save:"
+longopts+=",train-phased-phase2-trim-data-samples:"
+
+opts=$(getopt -q -o "" --longoptions "$longopts" -n "getopt.sh" -- "$@");
+if [ $? -ne 0 ]; then
+    printf -- "\tUnrecognized option specified\n\n"
+    exit 1
+fi
+eval set -- "$opts";
+while true; do
+    arg=$1; shift
+    val=$1; shift
+    case "$arg" in
+        --workflow)
+            workflow="$val"
+            ;;
+
+    # The following options are for sdg
+        --sdg-model)
+            sdg_model=$val
+            ;;
+        --sdg-num-cpus)
+            sdg_num_cpus=" --num-cpus $val"
+            ;;
+        --sdg-gpus)
+            sdg_num_cpus=" --gpus $val"
+            ;;
+        --sdg-batch-size)
+            sdg_batch_size=" --batch-size $val"
+            ;;
+
+    # The following options are for training
+        --train-profile)
+            train_profile=$val
+            ;;
+        --train-model-path)
+            train_model_path=$val
+            ;;
+        --train-phased-mt-bench-judge)
+            train_phased_mt_bench_judge=$val
+            ;;
+        # For phase1
+        --train-phased-phase1-data)
+            train_phased_phase1_data=$val
+            ;;
+        --train-phased-phase1-num-epochs)
+            train_phased_phase1_num_epochs=$val
+            ;;
+        --train-phased-phase1-samples-per-save)
+            train_phased_phase1_samples_per_save="--phased-phase1-samples-per-save=$val"
+            ;;
+        --train-phased-phase1-trim-data-samples)
+            train_phased_phase1_trim_samples=$val
+            ;;
+        # For phase2
+        --train-phased-phase2-data)
+            train_phased_phase2_data=$val
+            ;;
+        --train-phased-phase2-num-epochs)
+            train_phased_phase2_num_epochs=$val
+            ;;
+        --train-phased-phase2-samples-per-save)
+            train_phased_phase2_samples_per_save="--phased-phase2-samples-per-save=$val"
+            ;;
+        --train-phased-phase2-trim-data-samples)
+            train_phased_phase2_trim_samples=$val
+            ;;
+        --)
+            break
+            ;;
+        *)
+            echo "Invalid option: [$arg]"
+            exit 1
+    esac
+done
+
+# Valid values for $train_profile:
+# A100_H100_x2 A100_H100_x4 A100_H100_x8 L40_x4 L40_x8 L4_x8 train_a100x4x8
+ilab config init --non-interactive --train-profile /usr/share/instructlab/training/profiles/$train_profile.yaml
+
+ilab config show >ilab-config-show.yaml
+
+echo "workflow: $workflow"
+echo "nnodes: $nnodes"
+echo "gpus: $gpus"
+
+if [[ $workflow =~ ^train.* ]]; then
+    ilab model train --help >ilab-model-train-help.txt
+    echo "cpu_offload_optimizer: $cpu_offload_optimizer"
+    echo "cpu_offload_pin_memory: $cpu_offload_pin_memory"
+    mkdir -p e2e
+
+    if [[ ! -z "$train_phased_phase1_trim_samples" ]]; then
+        if [[ ! -e /tmp/random-but-same ]]; then
+            exit_error "Could not find /tmp/random-but-same"
+	fi
+        original_num_samples=`wc -l $train_phased_phase1_data | awk '{print $1}'`
+        shuf_cmd="shuf -n $train_phased_phase1_trim_samples --random-source=/tmp/random-but-same $train_phased_phase1_data -o $train_phased_phase1_data.randomly-trimmed"
+	echo "Going to run: $shuf_cmd"
+	$shuf_cmd || exit_error "$shuf_cmd failed"
+        train_phased_phase1_data+=".randomly-trimmed"
+	echo "trimmed data:"
+        if [[ ! -e $train_phased_phase1_data ]]; then
+            exit_error "Could not find $train_phased_phase1_data"
+	fi
+	/bin/ls -l $train_phased_phase1_data
+	echo "scale=2; $original_num_samples / $trimmed_num_samples" | bc >phase1-trimmed-sample-ratio.txt
+        trimmed_num_samples=`wc -l $train_phased_phase1_data | awk '{print $1}'`
+    fi
+
+    if [[ ! -z "$train_phased_phase2_trim_samples" ]]; then
+        if [[ ! -e /tmp/random-but-same ]]; then
+            exit_error "Could not find /tmp/random-but-same"
+	fi
+        original_num_samples=`wc -l $train_phased_phase2_data | awk '{print $1}'`
+        shuf_cmd="shuf -n $train_phased_phase2_trim_samples --random-source=/tmp/random-but-same $train_phased_phase2_data -o $train_phased_phase2_data.randomly-trimmed"
+	echo "Going to run: $shuf_cmd"
+	$shuf_cmd || exit_error "$shuf_cmd failed"
+        train_phased_phase2_data+=".randomly-trimmed"
+	echo "trimmed data:"
+        if [[ ! -e $train_phased_phase2_data ]]; then
+            exit_error "Could not find $train_phased_phase2_data"
+	fi
+	/bin/ls -l $train_phased_phase2_data
+        trimmed_num_samples=`wc -l $train_phased_phase2_data | awk '{print $1}'`
+	echo "scale=2; $original_num_samples / $trimmed_num_samples" | bc >phase2-trimmed-sample-ratio.txt
+    fi
+
+    train_cmd="ilab model train --skip-user-confirm --strategy lab-multiphase"
+    train_cmd+=" --phased-base-dir e2e"
+    train_cmd+=" --model-path $train_model_path"
+    train_cmd+=" --phased-phase1-data $train_phased_phase1_data"
+    train_cmd+=" --phased-phase1-num-epochs $train_phased_phase1_num_epochs"
+    if [[ ! -z "$train_phased_phase1_samples_per_save" ]]; then
+        train_cmd+=" --phased-phase1-samples-per-save $train_phased_phase1_samples_per_save"
+    fi
+    train_cmd+=" --phased-phase2-data $train_phased_phase2_data"
+    train_cmd+=" --phased-phase2-num-epochs $train_phased_phase2_num_epochs"
+    if [[ ! -z "$train_phased_phase2_samples_per_save" ]]; then
+        train_cmd+=" --phased-phase2-samples-per-save $train_phased_phase2_samples_per_save"
+    fi
+    train_cmd+=" --phased-mt-bench-judge $train_phased_mt_bench_judge"
+
+    echo "train cmd:"
+    echo "$train_cmd"
+
+    echo "Training:"
+    snapshot_file=""
+    date +%s >train-start-timestamp.txt
+    $train_cmd >train-stdout.txt 2>train-stderr.txt
+    rc=$?
+    wait
+    date +%s >train-stop-timestamp.txt
+
+    # Delete any file larger than 100 MB (usually model checkpoints)
+    find . -size +100M -type f -print | while read line; do /bin/rm -f $line; done
+
+    # Compress the rest
+    find . -type f | while read line; do xz $line; done
+
+elif [[ $workflow =~ ^sdg.* ]]; then
+    ilab data generate --help >ilab-data-generate-help.txt
+    sdg_cmd="ilab data generate"
+    sdg_cmd+=" --model $sdg_model"
+    sdg_cmd+=" $sdg_num_cpus"
+    sdg_cmd+=" $sdg_batch_size"
+    sdg_cmd+=" $sdg_gpus"
+    sdg_cmd+=" --output-dir ."
+
+    echo "sdg cmd:"
+    echo "$sdg_cmd"
+
+    echo "running ilab taxonomy diff"
+    ilab taxonomy diff
+
+    # This assumes LoRa already exists and is not downloaded by InstructLab every time
+    # This assumes dir for LoRa is always in /home/data/lora, should be changed to a bench param (--lora-dir)
+    ln -sf /home/data/lora/text-classifier-skill-v3.3-clm-copy /opt/app-root/src/.cache/instructlab/models/skills-adapter-v3
+    ln -sf /home/data/lora/text-classifier-knowledge-v3-clm-copy /opt/app-root/src/.cache/instructlab/models/knowledge-adapter-v3
+
+    # This assumes taxonomy for phoenix and mtba already exists
+    # This assumes dir for taxonomy is always in /home/data/taxonomy/knowledge/phoenix,
+    # should be changed to bench param (--taxonomy-phoenix-dir --taxonomy-mtba-dir)
+    ln -sf /home/data/taxonomy/knowledge/phoenix /opt/app-root/src/.local/share/instructlab/taxonomy/knowledge/phoenix
+    ln -sf /home/data/taxonomy/knowledge/mtba /opt/app-root/src/.local/share/instructlab/taxonomy/knowledge/mtba
+
+    # The following is needed for post-processing
+    wc -l /usr/share/instructlab/sdg/datasets/skills.jsonl | awk '{print $1}' >skills-num-samples.txt
+
+    $sdg_cmd >sdg-stdout.txt 2>sdg-stderr.txt
+    rc=$?
+    for file in sdg-stdout.txt sdg-stderr.txt; do
+        xz $file &
+    done
+    wait
+else
+    echo "Workflow [$workflow] not supported, exiting"
+    exit 1
+fi
+
+exit $rc

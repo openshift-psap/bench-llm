@@ -1,0 +1,40 @@
+{
+  "presets": {
+  },
+  "validations": {
+    "generic_string" : {
+      "description" : "all types of strings",
+      "args" : [
+        "sdg-model",
+        "train-model-path",
+        "train-profile",
+        "train-phased-phase1-data",
+        "train-phased-phase2-data",
+        "train-phased-mt-bench-judge"
+      ],
+      "vals" : ".+"
+    },
+    "integer_ge_zero" : {
+      "description" : "a whole number >= 0",
+      "args" : [ 
+        "sdg-num-cpus",
+	"sdg-gpus",
+	"sdg-batch-size",
+	"train-model-path",
+	"train-profile",
+	"train-phased-phase1-num-epochs",
+	"train-phased-phase2-num-epochs",
+	"train-phased-phase1-samples-per-save",
+	"train-phased-phase2-samples-per-save",
+	"train-phased-phase1-trim-data-samples",
+	"train-phased-phase2-trim-data-samples"
+      ],
+      "vals" : "[0-9]+"
+    },
+    "workflows" : {
+      "description" : "what type of work to do",
+      "args" : [ "workflow" ],
+      "vals" : "train|sdg"
+    }
+  }
+}
