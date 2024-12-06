@@ -1,40 +1,44 @@
 {
-  "presets": {
-  },
-  "validations": {
-    "generic_string" : {
-      "description" : "all types of strings",
-      "args" : [
-        "sdg-model",
-        "train-model-path",
-        "train-profile",
-        "train-phased-phase1-data",
-        "train-phased-phase2-data",
-        "train-phased-mt-bench-judge"
-      ],
-      "vals" : ".+"
-    },
-    "integer_ge_zero" : {
-      "description" : "a whole number >= 0",
-      "args" : [ 
-        "sdg-num-cpus",
-	"sdg-gpus",
-	"sdg-batch-size",
-	"train-model-path",
-	"train-profile",
-	"train-phased-phase1-num-epochs",
-	"train-phased-phase2-num-epochs",
-	"train-phased-phase1-samples-per-save",
-	"train-phased-phase2-samples-per-save",
-	"train-phased-phase1-trim-data-samples",
-	"train-phased-phase2-trim-data-samples"
-      ],
-      "vals" : "[0-9]+"
-    },
-    "workflows" : {
-      "description" : "what type of work to do",
-      "args" : [ "workflow" ],
-      "vals" : "train|sdg"
+    "presets": {},
+    "validations": {
+        "generic_string": {
+            "description": "all types of strings",
+            "args": [
+                "config_output_format",
+                "config_output_dir",
+                "config_output_file",
+                "config_storage_type",
+                "config_dataset_file",
+                "config_load_options_type",
+                "config_plugin",
+                "config_plugin_options_model_name",
+                "config_plugin_options_host",
+                "config_plugin_options_endpoint"
+            ],
+            "vals": ".+"
+        },
+        "integer_ge_zero": {
+            "description": "a whole number >= 0",
+            "args": [
+                "config_dataset_max_queries",
+                "config_dataset_min_input_tokens",
+                "config_dataset_max_input_tokens",
+                "config_dataset_min_output_tokens",
+                "config_dataset_max_output_tokens",
+                "config_dataset_max_sequence_tokens",
+                "config_load_options_concurrency",
+                "config_load_options_duration",
+                "config_extra_metadata_replicas"
+            ],
+            "vals": "[0-9]+"
+        },
+        "boolean": {
+            "description": "True or False",
+            "args": [
+                "config_plugin_options_use_tls",
+                "config_plugin_options_streaming"
+            ],
+            "vals": "True|true|False|false"
+        }
     }
-  }
 }
