@@ -14,9 +14,8 @@
             }
           ],
           "config": {
-            "host": "localhost",
+            "host": "sutest@hostname",
             "settings": {
-              "controller-ip-address": "10.26.8.21",
               "userenv": "rhel-ai",
               "osruntime": "podman",
               "podman-settings": {
@@ -25,8 +24,8 @@
               },
               "host-mounts": [
                 {
-                  "src": "/home",
-                  "dest": "/home"
+                  "src": "/path/to/models",
+                  "dest": "/path/to/models"
                 }
               ],
               "cpu-partitioning": false
@@ -74,45 +73,129 @@
           {
             "params": [
               {
-                "arg": "cpu-offload-optimizer",
+                "arg": "config_output_format",
                 "vals": [
-                  "1"
+                  "json"
                 ]
               },
               {
-                "arg": "cpu-offload-pin-memory",
+                "arg": "config_output_dir",
                 "vals": [
-                  "1"
+                  "./output/"
                 ]
               },
               {
-                "arg": "nnodes",
+                "arg": "config_output_file",
                 "vals": [
-                  "1"
+                  "output-{concurrency:03d}.json"
                 ]
               },
               {
-                "arg": "model",
+                "arg": "config_storage_type",
                 "vals": [
-                  "/home/models/granite-7b-lab/"
+                  "local"
                 ]
               },
               {
-                "arg": "data-path",
+                "arg": "config_dataset_file",
                 "vals": [
-                  "/home/data/jun12-phase05.jsonl"
+                  "datasets/openorca_large_subset_011.jsonl"
                 ]
               },
               {
-                "arg": "num-runavg-samples",
+                "arg": "config_dataset_max_queries",
                 "vals": [
-                  "8"
+                  1000
                 ]
               },
               {
-                "arg": "nproc-per-node",
+                "arg": "config_dataset_min_input_tokens",
                 "vals": [
-                  "2"
+                  0
+                ]
+              },
+              {
+                "arg": "config_dataset_max_input_tokens",
+                "vals": [
+                  1024
+                ]
+              },
+              {
+                "arg": "config_dataset_min_output_tokens",
+                "vals": [
+                  0
+                ]
+              },
+              {
+                "arg": "config_dataset_max_output_tokens",
+                "vals": [
+                  1024
+                ]
+              },
+              {
+                "arg": "config_dataset_max_sequence_tokens",
+                "vals": [
+                  2048
+                ]
+              },
+              {
+                "arg": "config_load_options_type",
+                "vals": [
+                  "constant"
+                ]
+              },
+              {
+                "arg": "config_load_options_concurrency",
+                "vals": [
+                  1
+                ]
+              },
+              {
+                "arg": "config_load_options_duration",
+                "vals": [
+                  20
+                ]
+              },
+              {
+                "arg": "config_plugin",
+                "vals": [
+                  "openai_plugin"
+                ]
+              },
+              {
+                "arg": "config_plugin_options_use_tls",
+                "vals": [
+                  false
+                ]
+              },
+              {
+                "arg": "config_plugin_options_streaming",
+                "vals": [
+                  true
+                ]
+              },
+              {
+                "arg": "config_plugin_options_model_name",
+                "vals": [
+                  "flan-t5-small"
+                ]
+              },
+              {
+                "arg": "config_plugin_options_host",
+                "vals": [
+                  "http://route.to.host"
+                ]
+              },
+              {
+                "arg": "config_plugin_options_endpoint",
+                "vals": [
+                  "/v1/completions"
+                ]
+              },
+              {
+                "arg": "config_extra_metadata_replicas",
+                "vals": [
+                  1
                 ]
               }
             ]
