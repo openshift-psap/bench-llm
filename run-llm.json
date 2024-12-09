@@ -73,6 +73,12 @@
           {
             "params": [
               {
+                "arg": "repo_tag",
+                "vals": [
+                  "main"
+                ]
+              },
+              {
                 "arg": "config_output_format",
                 "vals": [
                   "json"

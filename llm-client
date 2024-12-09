@@ -1,9 +1,30 @@
 #!/bin/python3
 import sys
 import argparse
+import subprocess
+from typing import Dict, Optional
+from dataclasses import dataclass
+
+from jinja2 import Environment, FileSystemLoader
+
+@dataclass
+class CmdResult:
+    rc: int
+    stdout: Optional[str]
+    stderr: Optional[str]
+
+def run(cmd: str, capture_stdout: bool=False, capture_stderr: bool=False) -> CmdResult:
+    ran = subprocess.run(cmd, shell=True, stdout=(subprocess.PIPE if capture_stdout else None), stderr=(subprocess.PIPE if capture_stderr else None))
+    result = CmdResult(
+        ran.returncode,
+        None if not capture_stdout else ran.stdout.decode("utf-8"),
+        None if not capture_stderr else ran.stderr.decode("utf-8"),
+    )
+    return result
 
 def main():
     options = dict(
+        repo_tag = 'main',
         config_output_format = 'json',
         config_output_dir = './output/',
         config_output_file = 'output-{concurrency:03d}.json',
@@ -34,7 +55,24 @@ def main():
 
     args = parser.parse_args()
 
-    print(args)
+    # Download the correct branch of llm-load-test
+    run("git clone https://github.com/openshift-psap/llm-load-test")
+    run(f"cd llm-load-test && git checkout {args.repo_tag}")
+
+    # Template the config file
+    # Jinja2 template file should be copied from controller by Rickshaw
+    environment = Environment(loader=FileSystemLoader("/tmp/templates/"))
+    template = environment.get_template("config.yaml.j2")
+    # Grab all the settings prefixed with 'config_' they correspond to fields in the
+    # llm-load-test config file
+    config_options_from_cli_args = {k: v for k, v in vars(args).items() if "config_" in k}
+    complete_config = template.render(config_options_from_cli_args)
+    with open("config.yaml", "w", encoding="utf-8") as f:
+        f.write(complete_config)
+
+
+    # Run llm-load-test
+    run("cd llm-load-test && python3 load_test.py -c ../config.yaml")
 
     sys.exit(0)
 
