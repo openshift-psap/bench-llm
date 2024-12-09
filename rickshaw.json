@@ -15,6 +15,10 @@
         "dest": "/tmp/"
       },
       {
+        "src": "%bench-dir%/config.yaml.j2",
+        "dest": "/tmp/templates/"
+      },
+      {
         "src": "%bench-dir%/llm-get-runtime",
         "dest": "/usr/bin/"
       },

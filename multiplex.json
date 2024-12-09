@@ -4,6 +4,7 @@
         "generic_string": {
             "description": "all types of strings",
             "args": [
+                "repo_tag",
                 "config_output_format",
                 "config_output_dir",
                 "config_output_file",
