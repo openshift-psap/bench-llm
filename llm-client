@@ -74,6 +74,14 @@ def main():
     # Run llm-load-test
     run("cd llm-load-test && python3 load_test.py -c ../config.yaml")
 
+    # Copy the output json file from llm-load-test to a known location; this
+    # might be difficult since 'config_output_file' can include a variable that
+    # is formatted
+    run(f"cp llm-load-test/{args.config_output_dir}/{args.config_output_file} output.json")
+    # Save all settings
+    with open("settings.json", "w") as f:
+        f.write(json.dumps(vars(args), ident=4))
+
     sys.exit(0)
 
 if __name__ == "__main__":
