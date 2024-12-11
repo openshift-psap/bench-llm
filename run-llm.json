@@ -111,37 +111,37 @@
               {
                 "arg": "config_dataset_max_queries",
                 "vals": [
-                  1000
+                  "1000"
                 ]
               },
               {
                 "arg": "config_dataset_min_input_tokens",
                 "vals": [
-                  0
+                  "0"
                 ]
               },
               {
                 "arg": "config_dataset_max_input_tokens",
                 "vals": [
-                  1024
+                  "1024"
                 ]
               },
               {
                 "arg": "config_dataset_min_output_tokens",
                 "vals": [
-                  0
+                  "0"
                 ]
               },
               {
                 "arg": "config_dataset_max_output_tokens",
                 "vals": [
-                  1024
+                  "1024"
                 ]
               },
               {
                 "arg": "config_dataset_max_sequence_tokens",
                 "vals": [
-                  2048
+                  "2048"
                 ]
               },
               {
@@ -153,13 +153,13 @@
               {
                 "arg": "config_load_options_concurrency",
                 "vals": [
-                  1
+                  "1"
                 ]
               },
               {
                 "arg": "config_load_options_duration",
                 "vals": [
-                  20
+                  "20"
                 ]
               },
               {
@@ -171,13 +171,13 @@
               {
                 "arg": "config_plugin_options_use_tls",
                 "vals": [
-                  false
+                  "False"
                 ]
               },
               {
                 "arg": "config_plugin_options_streaming",
                 "vals": [
-                  true
+                  "True"
                 ]
               },
               {
@@ -201,7 +201,7 @@
               {
                 "arg": "config_extra_metadata_replicas",
                 "vals": [
-                  1
+                  "1"
                 ]
               }
             ]

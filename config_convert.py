@@ -15,7 +15,7 @@ def flatten(d: Union[Dict[str, Any], List[Any]], prefix="") -> List[Tuple[str, A
             elif type(v) is list:
                 elems.extend(flatten(v, prefix=(prefix+"_"+k)))
             else:
-                elems.append(((prefix+"_"+k), v))
+                elems.append(((prefix+"_"+k), str(v)))
     return elems
 
 def template(d: Union[Dict[str, Any], List[Any]], prefix="") -> Dict:
