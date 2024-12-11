@@ -79,10 +79,10 @@ def main():
     # is formatted
     run(f"cp llm-load-test/{args.config_output_dir}/{args.config_output_file} output.json")
     # Save all settings
-    with open("settings.json", "w") as f:
+    with open("params.json", "w") as f:
         f.write(json.dumps(vars(args), ident=4))
 
-    sys.exit(0)
+    return 0
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
