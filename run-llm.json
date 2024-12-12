@@ -93,7 +93,7 @@
               {
                 "arg": "config_output_file",
                 "vals": [
-                  "output-{concurrency:03d}.json"
+                  "output.json"
                 ]
               },
               {
