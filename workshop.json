@@ -21,7 +21,12 @@
                     "jinja2",
                     "pyyaml",
                     "numpy",
-                    "pandas"
+                    "pandas",
+                    "pylint",
+                    "isort",
+                    "flake8",
+                    "caikit-nlp-client",
+                    "urllib3"
                 ]
             }
         }
