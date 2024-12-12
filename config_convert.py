@@ -59,7 +59,7 @@ def main():
     print("========================================================")
     print("============ llm-load-test Config Template =============")
     print("========================================================")
-    print(yaml.dump(template(y, prefix="config")))
+    print(yaml.dump(template(y, prefix="config")).replace("\'{{", "{{").replace("}}\'", "}}"))
 
 if __name__ == "__main__":
     main()
