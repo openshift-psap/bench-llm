@@ -1,9 +1,18 @@
 #!/bin/python3
+
 import sys
+
+# Do this immediately to log as much of the execution as possible
+fp_out = open("client_stdout.txt", "w")
+fp_err = open("client_stderr.txt", "w")
+sys.stdout = fp_out
+sys.stderr = fp_err
+
 import argparse
 import subprocess
-from typing import Dict, Optional
+from typing import Optional
 from dataclasses import dataclass
+import json
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -61,7 +70,7 @@ def main():
 
     # Template the config file
     # Jinja2 template file should be copied from controller by Rickshaw
-    environment = Environment(loader=FileSystemLoader("/tmp/templates/"))
+    environment = Environment(loader=FileSystemLoader("/tmp/"))
     template = environment.get_template("config.yaml.j2")
     # Grab all the settings prefixed with 'config_' they correspond to fields in the
     # llm-load-test config file

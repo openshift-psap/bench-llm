@@ -6,8 +6,19 @@
     },
     "userenvs": [
         {
-            "name": "rhel-ai",
-            "requirements": []
+            "name": "fedora40",
+            "requirements": [
+                {
+                    "name": "pip",
+                    "type": "python3",
+                    "python3_info": {
+                        "packages": [
+                            "jinja2",
+                            "pyyaml"
+                        ]
+                    }
+                }
+            ]
         }
     ],
     "requirements": []
