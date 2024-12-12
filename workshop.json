@@ -20,7 +20,8 @@
                 "packages": [
                     "jinja2",
                     "pyyaml",
-                    "numpy"
+                    "numpy",
+                    "pandas"
                 ]
             }
         }
