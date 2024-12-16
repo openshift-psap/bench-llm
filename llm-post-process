@@ -14,9 +14,19 @@ import argparse
 import glob
 from datetime import datetime
 from pathlib import Path
-from dataclasses import dataclass
+from dataclasses import dataclass, is_dataclass, asdict
 from enum import Enum
-from typing import Dict, List
+from typing import Dict, List, Any
+
+
+def to_dict(a: Any):
+    if hasattr(a, "to_dict"):
+        return a.to_dict()
+    elif is_dataclass(a):
+        return asdict(a)
+    else:
+        raise TypeError(f"Cannot bring {a} to a dict")
+
 
 class MetricClass(Enum):
     COUNT = "count"
@@ -28,14 +38,12 @@ class Desc:
     source: str
     metric_type: str
 
-    def __str__(self):
-        return json.dumps(
-            {
-                "class": self.metric_class,
+    def to_dict(self):
+        return {
+                "class": str(self.metric_class.value),
                 "source": self.source,
                 "type": self.metric_type,
             }
-        )
 
 @dataclass
 class Metric:
@@ -43,27 +51,23 @@ class Metric:
     desc: Desc
     names: Dict[str, str]
 
-    def __str__(self):
-        return json.dumps(
-            {
-                "desc": self.desc,
+    def to_dict(self):
+        return {
+                "desc": to_dict(self.desc),
                 "idx": self.idx,
                 "names": self.names,
             }
-        )
 
 @dataclass
 class Period:
     name: str
     metric_files: List[str]
 
-    def __str__(self):
-        return json.dumps(
-            {
+    def to_dict(self):
+        return {
                 "name": self.name,
                 "metric-files": self.metric_files,
             }
-        )
 
 @dataclass
 class PostProcess:
@@ -73,20 +77,18 @@ class PostProcess:
     periods: List[Period]
     rickshaw_bench_metric_version: str
 
-    def __str__(self):
-        return json.dumps(
-            {
+    def to_dict(self):
+        return {
                 "primary-period": self.primary_period,
                 "primary-metric": self.primary_metric,
                 "benchmark": self.benchmark,
-                "periods": self.periods,
+                "periods": [to_dict(period) for period in self.periods],
                 "rickshaw-bench-metric": {
                     "schema": {
                         "version": self.rickshaw_bench_metric_version
                     }
                 }
             }
-        )
 
 @dataclass
 class Entry:
@@ -120,7 +122,7 @@ def main():
     )
 
     with open("post-process-data.json", "w") as f:
-        json.dump(post_process_config, f, indent=4)
+        f.write(json.dumps(to_dict(post_process_config)))
 
     # 2. Generate a file to describe what our metrics look like (ie, metric-data-0.json)
     metric_index = {
@@ -134,7 +136,7 @@ def main():
     ]
 
     with open("metric-data-0.json", "w") as f:
-        json.dump(metrics, f, indent=4)
+        f.write(json.dumps([to_dict(metric) for metric in metrics]))
 
     # 3. Parse the metrics we listed in step 2 using the artifacts from our
     #   test, then dump then to the corresponding csv file (ie, metric-data-0.csv)
@@ -154,7 +156,7 @@ def main():
     entries.append(Entry(metric_index["total-requests"], begin_time, end_time, output["summary"]["total_requests"]))
 
     with open("metric-data-0.csv", "w") as f:
-        f.writelines(str(entry) for entry in entries)
+        f.write("\n".join([str(entry) for entry in entries]))
 
     return 0
 
