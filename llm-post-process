@@ -14,7 +14,89 @@ import argparse
 import glob
 from datetime import datetime
 from pathlib import Path
+from dataclasses import dataclass
+from enum import Enum
+from typing import Dict, List
 
+class MetricClass(Enum):
+    COUNT = "count"
+    THROUGHPUT = "throughput"
+
+@dataclass
+class Desc:
+    metric_class: MetricClass
+    source: str
+    metric_type: str
+
+    def __str__(self):
+        return json.dumps(
+            {
+                "class": self.metric_class,
+                "source": self.source,
+                "type": self.metric_type,
+            }
+        )
+
+@dataclass
+class Metric:
+    idx: int
+    desc: Desc
+    names: Dict[str, str]
+
+    def __str__(self):
+        return json.dumps(
+            {
+                "desc": self.desc,
+                "idx": self.idx,
+                "names": self.names,
+            }
+        )
+
+@dataclass
+class Period:
+    name: str
+    metric_files: List[str]
+
+    def __str__(self):
+        return json.dumps(
+            {
+                "name": self.name,
+                "metric-files": self.metric_files,
+            }
+        )
+
+@dataclass
+class PostProcess:
+    primary_period: str
+    primary_metric: str
+    benchmark: str
+    periods: List[Period]
+    rickshaw_bench_metric_version: str
+
+    def __str__(self):
+        return json.dumps(
+            {
+                "primary-period": self.primary_period,
+                "primary-metric": self.primary_metric,
+                "benchmark": self.benchmark,
+                "periods": self.periods,
+                "rickshaw-bench-metric": {
+                    "schema": {
+                        "version": self.rickshaw_bench_metric_version
+                    }
+                }
+            }
+        )
+
+@dataclass
+class Entry:
+    idx: int
+    start: float
+    end: float
+    value: float
+
+    def __str__(self):
+        return f"{self.idx},{self.start},{self.end},{self.value}"
 
 def main():
 
@@ -23,14 +105,56 @@ def main():
     # result for the benchmark is the 'measurement' period.  Other periods thay may exist
     # could be "warm-up", "prep", etc.
 
-    iter_sample = {
-        'primary-period': "measurement",
-        'benchmark': "llm",
-        'periods': [],
-        'rickshaw-bench-metric': { 'schema': { 'version': '2021.04.12' } }
-        }
 
-    metric_files = []
+    # There are 3 important phases to the post processing here...
+
+    # 1. Generate the 'post-process-data.json` file which describes where to find
+    #   our processed data and includes some metadata
+    periods = [Period("measurement", ["metric-data-0"])]
+    post_process_config = PostProcess(
+        "measurement",
+        "throughput",
+        "llm",
+        periods,
+        '2021.04.12',
+    )
+
+    with open("post-process-data.json", "w") as f:
+        json.dump(post_process_config, f, indent=4)
+
+    # 2. Generate a file to describe what our metrics look like (ie, metric-data-0.json)
+    metric_index = {
+        "throughput": 0,
+        "total-requests": 1,
+    }
+
+    metrics: List[Metric] = [
+        Metric(metric_index["throughput"], Desc(MetricClass.THROUGHPUT, "llm-load-test", "throughput"), {}),
+        Metric(metric_index["total-requests"], Desc(MetricClass.COUNT, "llm-load-test", "total-requests"), {}),
+    ]
+
+    with open("metric-data-0.json", "w") as f:
+        json.dump(metrics, f, indent=4)
+
+    # 3. Parse the metrics we listed in step 2 using the artifacts from our
+    #   test, then dump then to the corresponding csv file (ie, metric-data-0.csv)
+    output = {}
+    with open("output.json", "r") as f:
+        output = json.load(f)
+
+    begin_time = min(result["start_time"] for result in output["results"])
+    end_time = max(result["end_time"] for result in output["results"])
+
+    entries: List[Entry] = []
+
+    # Extract throughput from llm-load-test output
+    entries.append(Entry(metric_index["throughput"], begin_time, end_time, output["summary"]["throughput"]))
+
+    # Extract total_requests from llm-load-test output
+    entries.append(Entry(metric_index["total-requests"], begin_time, end_time, output["summary"]["total_requests"]))
+
+    with open("metric-data-0.csv", "w") as f:
+        f.writelines(str(entry) for entry in entries)
 
     return 0
 
