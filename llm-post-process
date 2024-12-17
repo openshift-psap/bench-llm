@@ -98,7 +98,7 @@ class Entry:
     value: float
 
     def __str__(self):
-        return f"{self.idx},{self.start},{self.end},{self.value}"
+        return f"{int(self.idx)},{int(self.start)},{int(self.end)},{float(self.value)}"
 
 def main():
 
@@ -150,10 +150,10 @@ def main():
     entries: List[Entry] = []
 
     # Extract throughput from llm-load-test output
-    entries.append(Entry(metric_index["throughput"], begin_time, end_time, output["summary"]["throughput"]))
+    entries.append(Entry(metric_index["throughput"], begin_time, end_time, float(output["summary"]["throughput"])))
 
     # Extract total_requests from llm-load-test output
-    entries.append(Entry(metric_index["total-requests"], begin_time, end_time, output["summary"]["total_requests"]))
+    entries.append(Entry(metric_index["total-requests"], begin_time, end_time, float(output["summary"]["total_requests"])))
 
     with open("metric-data-0.csv", "w") as f:
         f.write("\n".join([str(entry) for entry in entries]))
