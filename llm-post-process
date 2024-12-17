@@ -93,8 +93,8 @@ class PostProcess:
 @dataclass
 class Entry:
     idx: int
-    start: float
-    end: float
+    start: int
+    end: int
     value: float
 
     def __str__(self):
@@ -144,8 +144,8 @@ def main():
     with open("output.json", "r") as f:
         output = json.load(f)
 
-    begin_time = min(result["start_time"] for result in output["results"])
-    end_time = max(result["end_time"] for result in output["results"])
+    begin_time = int(min(result["start_time"] for result in output["results"]))
+    end_time = int(max(result["end_time"] for result in output["results"]))
 
     entries: List[Entry] = []
 
