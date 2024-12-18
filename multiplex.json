@@ -7,7 +7,6 @@
                 "repo_tag",
                 "config_output_format",
                 "config_output_dir",
-                "config_output_file",
                 "config_storage_type",
                 "config_dataset_file",
                 "config_load_options_type",
@@ -40,6 +39,13 @@
                 "config_plugin_options_streaming"
             ],
             "vals": "True|true|False|false"
+        },
+        "string_no_template": {
+            "description": "Ensure the string does not contain a variable placeholder '{' or '}'",
+            "args": [
+                "config_output_file"
+            ],
+            "vals": "^((?!{|}).)*$"
         }
     }
 }

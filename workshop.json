@@ -6,9 +6,29 @@
     },
     "userenvs": [
         {
-            "name": "rhel-ai",
-            "requirements": []
+            "name": "fedora40",
+            "requirements": [
+                "pip"
+            ]
         }
     ],
-    "requirements": []
+    "requirements": [
+        {
+            "name": "pip",
+            "type": "python3",
+            "python3_info": {
+                "packages": [
+                    "jinja2",
+                    "pyyaml",
+                    "numpy",
+                    "pandas",
+                    "pylint",
+                    "isort",
+                    "flake8",
+                    "caikit-nlp-client",
+                    "urllib3"
+                ]
+            }
+        }
+    ]
 }

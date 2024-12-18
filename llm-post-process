@@ -14,166 +14,152 @@ import argparse
 import glob
 from datetime import datetime
 from pathlib import Path
+from dataclasses import dataclass, is_dataclass, asdict
+from enum import Enum
+from typing import Dict, List, Any
 
-TOOLBOX_HOME = os.environ.get('TOOLBOX_HOME')
-if TOOLBOX_HOME is None:
-    print("This script requires libraries that are provided by the toolbox project.")
-    print("Toolbox can be acquired from https://github.com/perftool-incubator/toolbox and")
-    print("then use 'export TOOLBOX_HOME=/path/to/toolbox' so that it can be located.")
-    exit(1)
-else:
-    p = Path(TOOLBOX_HOME) / 'python'
-    if not p.exists() or not p.is_dir():
-        print("ERROR: <TOOLBOX_HOME>/python ('%s') does not exist!" % (p))
-        exit(2)
-    sys.path.append(str(p))
-from toolbox.metrics import log_sample
-from toolbox.metrics import finish_samples
 
-params = {}
+def to_dict(a: Any):
+    if hasattr(a, "to_dict"):
+        return a.to_dict()
+    elif is_dataclass(a):
+        return asdict(a)
+    else:
+        raise TypeError(f"Cannot bring {a} to a dict")
 
-class t_global(object):
-     args = None
 
-def process_options():
-    parser = argparse.ArgumentParser(description = 'Post process raw benchmark data into Common Data Model output')
+class MetricClass(Enum):
+    COUNT = "count"
+    THROUGHPUT = "throughput"
 
-    parser.add_argument('--workflow',
-                        dest = 'workflow',
-                        help = 'sdg or train',
-                        default = ""
-                        )
+@dataclass
+class Desc:
+    metric_class: MetricClass
+    source: str
+    metric_type: str
 
-    t_global.args, unknown = parser.parse_known_args()
+    def to_dict(self):
+        return {
+                "class": str(self.metric_class.value),
+                "source": self.source,
+                "type": self.metric_type,
+            }
 
-    return()
+@dataclass
+class Metric:
+    idx: int
+    desc: Desc
+    names: Dict[str, str]
+
+    def to_dict(self):
+        return {
+                "desc": to_dict(self.desc),
+                "idx": self.idx,
+                "names": self.names,
+            }
+
+@dataclass
+class Period:
+    name: str
+    metric_files: List[str]
+
+    def to_dict(self):
+        return {
+                "name": self.name,
+                "metric-files": self.metric_files,
+            }
+
+@dataclass
+class PostProcess:
+    primary_period: str
+    primary_metric: str
+    benchmark: str
+    periods: List[Period]
+    rickshaw_bench_metric_version: str
+
+    def to_dict(self):
+        return {
+                "primary-period": self.primary_period,
+                "primary-metric": self.primary_metric,
+                "benchmark": self.benchmark,
+                "periods": [to_dict(period) for period in self.periods],
+                "rickshaw-bench-metric": {
+                    "schema": {
+                        "version": self.rickshaw_bench_metric_version
+                    }
+                }
+            }
+
+@dataclass
+class Entry:
+    idx: int
+    start: int
+    end: int
+    value: float
+
+    def __str__(self):
+        return f"{int(self.idx)},{int(self.start)},{int(self.end)},{float(self.value)}"
 
 def main():
-    process_options()
-    if t_global.args.workflow == '':
-        print('workflow was not defined, exiting')
-        return(1)
 
     # In any benchmark post-process script, the metrics generated need to be attributed to a
     # time-period (AKA benchmark-phase).  The period which is used to report and offical
     # result for the benchmark is the 'measurement' period.  Other periods thay may exist
     # could be "warm-up", "prep", etc.
 
-    iter_sample = {
-        'primary-period': "measurement",
-        'benchmark': "llm",
-        'periods': [],
-        'rickshaw-bench-metric': { 'schema': { 'version': '2021.04.12' } }
-        }
 
-    metric_files = []
+    # There are 3 important phases to the post processing here...
 
-    if t_global.args.workflow == 'train':
-        first_ts = None
-        last_ts = None
-        for phase in [1, 2]:
-            period = { 'name': 'phase' + str(phase), 'metric-files': [] }
-            file_id = 'phase' + str(phase)
-            desc = {'source' : 'llm', 'class': 'throughput'}
-            names = {}
-            desc['type'] = 'train-samples-sec';
-            filename = 'e2e/phase' + str(phase) + '/checkpoints/training_params_and_metrics_global0.jsonl.xz'
-            print('Opening ' + filename)
-            with lzma.open(filename, 'rt') as file:
-                for line in file:
-                    d = json.loads(line)
-                    # file contents to parse (per line):
-                    #{"epoch": 0, "step": 1, "rank": 0,
-                    # "loss": 0.18146394193172455,
-                    # "overall_throughput": 3.5244029279710176,
-                    # "lr": 0.0, "cuda_mem_allocated": 14.08400821685791,
-                    # "cuda_malloc_retries": 0,
-                    # "num_loss_counted_tokens": 4940, "batch_size": 14,
-                    # "total_loss": 0.4069821238517761, "gradnorm": null,
-                    # "weight_norm": 557.9681396484375,
-                    # "timestamp": "2024-07-18T22:46:41.628932"}
-                    if 'epoch' in d.keys():
-                        dt = datetime.strptime(d['timestamp'], '%Y-%m-%dT%X.%f')
-                        ts = math.floor(dt.timestamp() * 1000)
-                        if first_ts == None:
-                            first_ts = ts
-                        sample = {'end': ts, 'value': d['overall_throughput']}
-                        log_sample(file_id, desc, names, sample)
-                        last_ts = ts
-            metric_file_name = finish_samples()
-            period['metric-files'].append(metric_file_name)
-            iter_sample['periods'].append(period)
+    # 1. Generate the 'post-process-data.json` file which describes where to find
+    #   our processed data and includes some metadata
+    periods = [Period("measurement", ["metric-data-0"])]
+    post_process_config = PostProcess(
+        "measurement",
+        "throughput",
+        "llm",
+        periods,
+        '2021.04.12',
+    )
 
-        # Now create the primary metric and the primary-period
-        iter_sample['primary-metric'] = 'actual-train-seconds'
-        period = { 'name': 'measurement', 'metric-files': [] }
-        file_id = 'measurement'
-        desc = {'source' : 'llm', 'class': 'count', 'type': 'actual-train-seconds'}
-        names = {}
-        sample = {'begin': first_ts, 'end': last_ts, 'value': (last_ts - first_ts) / 1000}
-        log_sample(file_id, desc, names, sample)
-        metric_file_name = finish_samples()
-        period['metric-files'].append(metric_file_name)
-        iter_sample['periods'].append(period)
+    with open("post-process-data.json", "w") as f:
+        f.write(json.dumps(to_dict(post_process_config)))
 
-    elif t_global.args.workflow == 'sdg':
-        print('sdg')
-        iter_sample['primary-metric'] = 'sdg-samples-sec'
-        period = { 'name': 'measurement', 'metric-files': [] }
-        file_id = 'measurement'
-        desc = {'source' : 'llm', 'class': 'throughput', 'type': 'sdg-samples-sec'}
-        names = {}
+    # 2. Generate a file to describe what our metrics look like (ie, metric-data-0.json)
+    metric_index = {
+        "throughput": 0,
+        "total-requests": 1,
+    }
 
-        iter_sample['primary-metric'] = 'sdg-samples-sec'
-        num_skills = open("skills-num-samples.txt").readline().rstrip()
-        print('skills num samples')
-        print(num_skills)
-        # INFO 2024-09-10 15:10:46,813 instructlab.sdg.datamixing:126: Dataset loaded with 70 samples
-        # INFO 2024-09-09 20:39:58,535 instructlab.sdg:438: Generation took 1373.39s
-        skipped_skills = False
-        total_samples = int(0)
-        # Add up the samples from all "dataset loaded" lines only after the skills are loaded
-        # Skills are loaded by detecting the "dataset loaded" line with N samples,
-        # where N = skills-num-samples.txt (which comes from counting lines in
-        # /usr/share/instructlab/sdg/datasets/skills.jsonl during the benchmark
-        with lzma.open("sdg-stderr.txt.xz", 'rt') as file:
-            for line in file:
-                if skipped_skills:
-                    if reggy := re.search(r'^INFO\s(\d+-\d+-\d+\s\d+:\d+:\d+\d+,\d+).+Generation\stook\s(\d+\.\d+)s', line):
-                        print('found generation line')
-                        print(line)
-                        elapsed_time = float(reggy.group(2))
-                        end_dt = reggy.group(1)
-                        samples_sec = float(total_samples / elapsed_time)
-                        dt = datetime.strptime(end_dt, '%Y-%m-%d %X,%f')
-                        end_ts = int(math.floor(dt.timestamp() * 1000))
-                        begin_ts = int(end_ts - (elapsed_time * 1000))
-                        # We have exactly 1 sample, so providing the 'begin' timestamp is required
-                        sample = {'begin': begin_ts, 'end': end_ts, 'value': samples_sec}
-                        print('log_sample')
-                        log_sample(file_id, desc, names, sample)
-                        break
-                    if reggy := re.search(r'^INFO\s\d+-\d+-\d+\s\d+:\d+:\d+,\d+.+Dataset\sloaded\swith\s(\d+)\ssamples', line):
-                        print('found Dataset line')
-                        print(line)
-                        total_samples = total_samples + int(reggy.group(1))
-                else:
-                    if reggy := re.search(r'^INFO\s\d+-\d+-\d+\s\d+:\d+:\d+,\d+\sinstructlab.sdg.datamixing:\d+:\sDataset\sloaded\swith\s(\d+)\ssamples', line):
-                        print('found skills Dataset line')
-                        print(line)
-                        num_samples = reggy.group(1)
-                        if num_samples == num_skills:
-                            skipped_skills = True
-        
+    metrics: List[Metric] = [
+        Metric(metric_index["throughput"], Desc(MetricClass.THROUGHPUT, "llm-load-test", "throughput"), {}),
+        Metric(metric_index["total-requests"], Desc(MetricClass.COUNT, "llm-load-test", "total-requests"), {}),
+    ]
 
-        metric_file_name = finish_samples()
-        period['metric-files'].append(metric_file_name)
-        iter_sample['periods'].append(period)
-    f = open('post-process-data.json', 'w')
-    f.write(json.dumps(iter_sample))
-    f.close
-    return(0)
+    with open("metric-data-0.json", "w") as f:
+        f.write(json.dumps([to_dict(metric) for metric in metrics]))
+
+    # 3. Parse the metrics we listed in step 2 using the artifacts from our
+    #   test, then dump then to the corresponding csv file (ie, metric-data-0.csv)
+    output = {}
+    with open("output.json", "r") as f:
+        output = json.load(f)
+
+    begin_time = int(min(result["start_time"] for result in output["results"]))
+    end_time = int(max(result["end_time"] for result in output["results"]))
+
+    entries: List[Entry] = []
+
+    # Extract throughput from llm-load-test output
+    entries.append(Entry(metric_index["throughput"], begin_time, end_time, float(output["summary"]["throughput"])))
+
+    # Extract total_requests from llm-load-test output
+    entries.append(Entry(metric_index["total-requests"], begin_time, end_time, float(output["summary"]["total_requests"])))
+
+    with open("metric-data-0.csv", "w") as f:
+        f.write("\n".join([str(entry) for entry in entries]))
+
+    return 0
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

@@ -1,9 +1,18 @@
 #!/bin/python3
+
 import sys
+
+# Do this immediately to log as much of the execution as possible
+fp_out = open("client_stdout.txt", "w")
+fp_err = open("client_stderr.txt", "w")
+sys.stdout = fp_out
+sys.stderr = fp_err
+
 import argparse
 import subprocess
-from typing import Dict, Optional
+from typing import Optional
 from dataclasses import dataclass
+import json
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -13,13 +22,16 @@ class CmdResult:
     stdout: Optional[str]
     stderr: Optional[str]
 
-def run(cmd: str, capture_stdout: bool=False, capture_stderr: bool=False) -> CmdResult:
-    ran = subprocess.run(cmd, shell=True, stdout=(subprocess.PIPE if capture_stdout else None), stderr=(subprocess.PIPE if capture_stderr else None))
+def run(cmd: str, ignore_output=False, out_file=fp_out, err_file=fp_err) -> CmdResult:
+    ran = subprocess.run(cmd, shell=True, stdout=(None if ignore_output else subprocess.PIPE), stderr=(None if ignore_output else subprocess.PIPE))
     result = CmdResult(
         ran.returncode,
-        None if not capture_stdout else ran.stdout.decode("utf-8"),
-        None if not capture_stderr else ran.stderr.decode("utf-8"),
+        None if ignore_output else ran.stdout.decode("utf-8"),
+        None if ignore_output else ran.stderr.decode("utf-8"),
     )
+    if not ignore_output:
+        out_file.write(result.stdout)
+        err_file.write(result.stderr)
     return result
 
 def main():
@@ -27,7 +39,7 @@ def main():
         repo_tag = 'main',
         config_output_format = 'json',
         config_output_dir = './output/',
-        config_output_file = 'output-{concurrency:03d}.json',
+        config_output_file = 'output.json',
         config_storage_type = 'local',
         config_dataset_file = 'datasets/openorca_large_subset_011.jsonl',
         config_dataset_max_queries = 1000,
@@ -61,7 +73,7 @@ def main():
 
     # Template the config file
     # Jinja2 template file should be copied from controller by Rickshaw
-    environment = Environment(loader=FileSystemLoader("/tmp/templates/"))
+    environment = Environment(loader=FileSystemLoader("/tmp/"))
     template = environment.get_template("config.yaml.j2")
     # Grab all the settings prefixed with 'config_' they correspond to fields in the
     # llm-load-test config file
@@ -74,7 +86,15 @@ def main():
     # Run llm-load-test
     run("cd llm-load-test && python3 load_test.py -c ../config.yaml")
 
-    sys.exit(0)
+    # Copy the output json file from llm-load-test to a known location; this
+    # might be difficult since 'config_output_file' can include a variable that
+    # is formatted
+    run(f"cp llm-load-test/{args.config_output_dir}/{args.config_output_file} output.json")
+    # Save all settings
+    with open("params.json", "w") as f:
+        f.write(json.dumps(vars(args), indent=4))
+
+    return 0
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
