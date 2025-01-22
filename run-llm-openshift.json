@@ -4,25 +4,32 @@
   },
   "endpoints": [
     {
-      "type": "remotehosts",
-      "remotes": [
+      "type": "k8s",
+      "controller-ip": "your-controller",
+      "host": "localhost",
+      "user": "root",
+      "userenv": "fedora40",
+      "unique-project": 1,
+      "client": "1",
+      "config": [
         {
-          "engines": [
+          "targets": [
             {
               "role": "client",
               "ids": "1"
             }
           ],
-          "config": {
-            "host": "sutest@hostname",
-            "settings": {
-              "userenv": "rhel-ai",
-              "osruntime": "podman",
-              "podman-settings": {
-                "device": "nvidia.com/gpu=all",
-                "shm-size": "10.00gb"
-              },
-              "cpu-partitioning": false
+          "settings": {
+            "securityContext": {
+              "capabilities": {
+                "add": [
+                  "SYS_NICE",
+                  "IPC_LOCK"
+                ]
+              }
+            },
+            "nodeSelector": {
+              "kubernetes.io/hostname": "name-of-k8s-node"
             }
           }
         }
@@ -153,7 +160,7 @@
               {
                 "arg": "config_load_options_duration",
                 "vals": [
-                  "20"
+                  "30"
                 ]
               },
               {
@@ -177,13 +184,13 @@
               {
                 "arg": "config_plugin_options_model_name",
                 "vals": [
-                  "flan-t5-small"
+                  "/mnt/models/"
                 ]
               },
               {
                 "arg": "config_plugin_options_host",
                 "vals": [
-                  "http://route.to.host"
+                  "https://model-endpoint.example"
                 ]
               },
               {

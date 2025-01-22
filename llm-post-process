@@ -144,8 +144,9 @@ def main():
     with open("output.json", "r") as f:
         output = json.load(f)
 
-    begin_time = int(min(result["start_time"] for result in output["results"]))
-    end_time = int(max(result["end_time"] for result in output["results"]))
+    # multiply the timestamp by 1000. llm-load-test has timestamps in seconds we need ms.
+    begin_time = int(min(result["start_time"] for result in output["results"])) * 1000
+    end_time = int(max(result["end_time"] for result in output["results"])) * 1000
 
     entries: List[Entry] = []
 
