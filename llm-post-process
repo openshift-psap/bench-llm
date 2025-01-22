@@ -115,7 +115,7 @@ def main():
     periods = [Period("measurement", ["metric-data-0"])]
     post_process_config = PostProcess(
         "measurement",
-        "throughput",
+        "tokens-per-second",
         "llm",
         periods,
         '2021.04.12',
@@ -126,12 +126,12 @@ def main():
 
     # 2. Generate a file to describe what our metrics look like (ie, metric-data-0.json)
     metric_index = {
-        "throughput": 0,
+        "tokens-per-second": 0,
         "total-requests": 1,
     }
 
     metrics: List[Metric] = [
-        Metric(metric_index["throughput"], Desc(MetricClass.THROUGHPUT, "llm", "tokens-per-second"), {}),
+        Metric(metric_index["tokens-per-second"], Desc(MetricClass.THROUGHPUT, "llm", "tokens-per-second"), {}),
         Metric(metric_index["total-requests"], Desc(MetricClass.COUNT, "llm", "total-requests"), {}),
     ]
 
@@ -150,7 +150,7 @@ def main():
     entries: List[Entry] = []
 
     # Extract throughput from llm-load-test output
-    entries.append(Entry(metric_index["throughput"], begin_time, end_time, float(output["summary"]["throughput"])))
+    entries.append(Entry(metric_index["tokens-per-second"], begin_time, end_time, float(output["summary"]["throughput"])))
 
     # Extract total_requests from llm-load-test output
     entries.append(Entry(metric_index["total-requests"], begin_time, end_time, float(output["summary"]["total_requests"])))
