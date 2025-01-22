@@ -131,8 +131,8 @@ def main():
     }
 
     metrics: List[Metric] = [
-        Metric(metric_index["throughput"], Desc(MetricClass.THROUGHPUT, "llm-load-test", "throughput"), {}),
-        Metric(metric_index["total-requests"], Desc(MetricClass.COUNT, "llm-load-test", "total-requests"), {}),
+        Metric(metric_index["throughput"], Desc(MetricClass.THROUGHPUT, "llm", "tokens-per-second"), {}),
+        Metric(metric_index["total-requests"], Desc(MetricClass.COUNT, "llm", "total-requests"), {}),
     ]
 
     with open("metric-data-0.json", "w") as f:
