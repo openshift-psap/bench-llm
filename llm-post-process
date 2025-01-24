@@ -111,7 +111,7 @@ def main():
     periods = [Period("measurement", ["metric-data-0"])]
     post_process_config = PostProcess(
         "measurement",
-        "tokens-per-second",
+        "throughput",
         "llm",
         periods,
         '2021.04.12',
