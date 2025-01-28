@@ -3,21 +3,11 @@
 # vim: autoindent tabstop=4 shiftwidth=4 expandtab softtabstop=4 filetype=python
 
 import sys
-import os
-import lzma
-import re
-import copy
-import math
 import json
-import yaml
-import argparse
-import glob
-from datetime import datetime
-from pathlib import Path
 from dataclasses import dataclass, is_dataclass, asdict
 from enum import Enum
-from typing import Dict, List, Any
-
+from typing import Dict, List, Any, Optional, Tuple
+from functools import reduce
 
 def to_dict(a: Any):
     if hasattr(a, "to_dict"):
@@ -27,6 +17,12 @@ def to_dict(a: Any):
     else:
         raise TypeError(f"Cannot bring {a} to a dict")
 
+def json_lookup(d: Dict[Any, Any], path: str, delim: str=".") -> Optional[Any]:
+    try:
+        segments = path.split(delim)
+        return reduce(lambda td, seg: td[seg], segments, d)
+    except KeyError:
+        return None
 
 class MetricClass(Enum):
     COUNT = "count"
@@ -115,7 +111,7 @@ def main():
     periods = [Period("measurement", ["metric-data-0"])]
     post_process_config = PostProcess(
         "measurement",
-        "tokens-per-second",
+        "throughput",
         "llm",
         periods,
         '2021.04.12',
@@ -125,18 +121,84 @@ def main():
         f.write(json.dumps(to_dict(post_process_config)))
 
     # 2. Generate a file to describe what our metrics look like (ie, metric-data-0.json)
-    metric_index = {
-        "tokens-per-second": 0,
-        "total-requests": 1,
-    }
 
-    metrics: List[Metric] = [
-        Metric(metric_index["tokens-per-second"], Desc(MetricClass.THROUGHPUT, "llm", "tokens-per-second"), {}),
-        Metric(metric_index["total-requests"], Desc(MetricClass.COUNT, "llm", "total-requests"), {}),
+    # (Metric, string path to value in the json file)
+    metrics: List[Tuple[Metric, str]] = [
+        # summary
+        (Metric(0, Desc(MetricClass.THROUGHPUT, "llm", "throughput-full-duration"), {}), "summary.throughput_full_duration"),
+        (Metric(1, Desc(MetricClass.COUNT, "llm", "full-duration"), {}), "summary.full_duration"),
+        (Metric(2, Desc(MetricClass.THROUGHPUT, "llm", "throughput"), {}), "summary.throughput"),
+        (Metric(3, Desc(MetricClass.COUNT, "llm", "total-requests"), {}), "summary.total_requests"),
+        (Metric(4, Desc(MetricClass.COUNT, "llm", "req-completed-within-test-duration"), {}), "summary.req_completed_within_test_duration"),
+        (Metric(5, Desc(MetricClass.COUNT, "llm", "total-failures"), {}), "summary.total_failures"),
+        (Metric(6, Desc(MetricClass.COUNT, "llm", "failure-rate"), {}), "summary.failure_rate"),
+        # tpot
+        (Metric(7, Desc(MetricClass.COUNT, "llm", "tpot-min"), {}), "summary.tpot.min"),
+        (Metric(8, Desc(MetricClass.COUNT, "llm", "tpot-max"), {}), "summary.tpot.max"),
+        (Metric(9, Desc(MetricClass.COUNT, "llm", "tpot-median"), {}), "summary.tpot.median"),
+        (Metric(10, Desc(MetricClass.COUNT, "llm", "tpot-mean"), {}), "summary.tpot.mean"),
+        (Metric(11, Desc(MetricClass.COUNT, "llm", "tpot-percentile-80"), {}), "summary.tpot.percentile_80"),
+        (Metric(12, Desc(MetricClass.COUNT, "llm", "tpot-percentile-90"), {}), "summary.tpot.percentile_90"),
+        (Metric(13, Desc(MetricClass.COUNT, "llm", "tpot-percentile-95"), {}), "summary.tpot.percentile_95"),
+        (Metric(14, Desc(MetricClass.COUNT, "llm", "tpot-percentile-99"), {}), "summary.tpot.percentile_99"),
+        # ttft
+        (Metric(15, Desc(MetricClass.COUNT, "llm", "ttft-min"), {}), "summary.ttft.min"),
+        (Metric(16, Desc(MetricClass.COUNT, "llm", "ttft-max"), {}), "summary.ttft.max"),
+        (Metric(17, Desc(MetricClass.COUNT, "llm", "ttft-median"), {}), "summary.ttft.median"),
+        (Metric(18, Desc(MetricClass.COUNT, "llm", "ttft-mean"), {}), "summary.ttft.mean"),
+        (Metric(19, Desc(MetricClass.COUNT, "llm", "ttft-percentile-80"), {}), "summary.ttft.percentile_80"),
+        (Metric(20, Desc(MetricClass.COUNT, "llm", "ttft-percentile-90"), {}), "summary.ttft.percentile_90"),
+        (Metric(21, Desc(MetricClass.COUNT, "llm", "ttft-percentile-95"), {}), "summary.ttft.percentile_95"),
+        (Metric(22, Desc(MetricClass.COUNT, "llm", "ttft-percentile-99"), {}), "summary.ttft.percentile_99"),
+        # itl
+        (Metric(23, Desc(MetricClass.COUNT, "llm", "itl-min"), {}), "summary.itl.min"),
+        (Metric(24, Desc(MetricClass.COUNT, "llm", "itl-max"), {}), "summary.itl.max"),
+        (Metric(25, Desc(MetricClass.COUNT, "llm", "itl-median"), {}), "summary.itl.median"),
+        (Metric(26, Desc(MetricClass.COUNT, "llm", "itl-mean"), {}), "summary.itl.mean"),
+        (Metric(27, Desc(MetricClass.COUNT, "llm", "itl-percentile-80"), {}), "summary.itl.percentile_80"),
+        (Metric(28, Desc(MetricClass.COUNT, "llm", "itl-percentile-90"), {}), "summary.itl.percentile_90"),
+        (Metric(29, Desc(MetricClass.COUNT, "llm", "itl-percentile-95"), {}), "summary.itl.percentile_95"),
+        (Metric(30, Desc(MetricClass.COUNT, "llm", "itl-percentile-99"), {}), "summary.itl.percentile_99"),
+        # tt_ack
+        (Metric(31, Desc(MetricClass.COUNT, "llm", "tt-ack-min"), {}), "summary.tt_ack.min"),
+        (Metric(32, Desc(MetricClass.COUNT, "llm", "tt-ack-max"), {}), "summary.tt_ack.max"),
+        (Metric(33, Desc(MetricClass.COUNT, "llm", "tt-ack-median"), {}), "summary.tt_ack.median"),
+        (Metric(34, Desc(MetricClass.COUNT, "llm", "tt-ack-mean"), {}), "summary.tt_ack.mean"),
+        (Metric(35, Desc(MetricClass.COUNT, "llm", "tt-ack-percentile-80"), {}), "summary.tt_ack.percentile_80"),
+        (Metric(36, Desc(MetricClass.COUNT, "llm", "tt-ack-percentile-90"), {}), "summary.tt_ack.percentile_90"),
+        (Metric(37, Desc(MetricClass.COUNT, "llm", "tt-ack-percentile-95"), {}), "summary.tt_ack.percentile_95"),
+        (Metric(38, Desc(MetricClass.COUNT, "llm", "tt-ack-percentile-99"), {}), "summary.tt_ack.percentile_99"),
+        # response_time
+        (Metric(39, Desc(MetricClass.COUNT, "llm", "response-time-min"), {}), "summary.response_time.min"),
+        (Metric(40, Desc(MetricClass.COUNT, "llm", "response-time-max"), {}), "summary.response_time.max"),
+        (Metric(41, Desc(MetricClass.COUNT, "llm", "response-time-median"), {}), "summary.response_time.median"),
+        (Metric(42, Desc(MetricClass.COUNT, "llm", "response-time-mean"), {}), "summary.response_time.mean"),
+        (Metric(43, Desc(MetricClass.COUNT, "llm", "response-time-percentile-80"), {}), "summary.response_time.percentile_80"),
+        (Metric(44, Desc(MetricClass.COUNT, "llm", "response-time-percentile-90"), {}), "summary.response_time.percentile_90"),
+        (Metric(45, Desc(MetricClass.COUNT, "llm", "response-time-percentile-95"), {}), "summary.response_time.percentile_95"),
+        (Metric(46, Desc(MetricClass.COUNT, "llm", "response-time-percentile-99"), {}), "summary.response_time.percentile_99"),
+        # output_tokens
+        (Metric(47, Desc(MetricClass.COUNT, "llm", "output-tokens-min"), {}), "summary.output_tokens.min"),
+        (Metric(48, Desc(MetricClass.COUNT, "llm", "output-tokens-max"), {}), "summary.output_tokens.max"),
+        (Metric(49, Desc(MetricClass.COUNT, "llm", "output-tokens-median"), {}), "summary.output_tokens.median"),
+        (Metric(50, Desc(MetricClass.COUNT, "llm", "output-tokens-mean"), {}), "summary.output_tokens.mean"),
+        (Metric(51, Desc(MetricClass.COUNT, "llm", "output-tokens-percentile-80"), {}), "summary.output_tokens.percentile_80"),
+        (Metric(52, Desc(MetricClass.COUNT, "llm", "output-tokens-percentile-90"), {}), "summary.output_tokens.percentile_90"),
+        (Metric(53, Desc(MetricClass.COUNT, "llm", "output-tokens-percentile-95"), {}), "summary.output_tokens.percentile_95"),
+        (Metric(54, Desc(MetricClass.COUNT, "llm", "output-tokens-percentile-99"), {}), "summary.output_tokens.percentile_99"),
+        # output_tokens_before_timeout
+        (Metric(55, Desc(MetricClass.COUNT, "llm", "output-tokens-before-timeout-min"), {}), "summary.output_tokens_before_timeout.min"),
+        (Metric(56, Desc(MetricClass.COUNT, "llm", "output-tokens-before-timeout-max"), {}), "summary.output_tokens_before_timeout.max"),
+        (Metric(57, Desc(MetricClass.COUNT, "llm", "output-tokens-before-timeout-median"), {}), "summary.output_tokens_before_timeout.median"),
+        (Metric(58, Desc(MetricClass.COUNT, "llm", "output-tokens-before-timeout-mean"), {}), "summary.output_tokens_before_timeout.mean"),
+        (Metric(59, Desc(MetricClass.COUNT, "llm", "output-tokens-before-timeout-percentile-80"), {}), "summary.output_tokens_before_timeout.percentile_80"),
+        (Metric(60, Desc(MetricClass.COUNT, "llm", "output-tokens-before-timeout-percentile-90"), {}), "summary.output_tokens_before_timeout.percentile_90"),
+        (Metric(61, Desc(MetricClass.COUNT, "llm", "output-tokens-before-timeout-percentile-95"), {}), "summary.output_tokens_before_timeout.percentile_95"),
+        (Metric(62, Desc(MetricClass.COUNT, "llm", "output-tokens-before-timeout-percentile-99"), {}), "summary.output_tokens_before_timeout.percentile_99"),
     ]
 
     with open("metric-data-0.json", "w") as f:
-        f.write(json.dumps([to_dict(metric) for metric in metrics]))
+        f.write(json.dumps([to_dict(metric[0]) for metric in metrics]))
 
     # 3. Parse the metrics we listed in step 2 using the artifacts from our
     #   test, then dump then to the corresponding csv file (ie, metric-data-0.csv)
@@ -149,12 +211,17 @@ def main():
     end_time = int(max(result["end_time"] for result in output["results"])) * 1000
 
     entries: List[Entry] = []
-
-    # Extract throughput from llm-load-test output
-    entries.append(Entry(metric_index["tokens-per-second"], begin_time, end_time, float(output["summary"]["throughput"])))
-
-    # Extract total_requests from llm-load-test output
-    entries.append(Entry(metric_index["total-requests"], begin_time, end_time, float(output["summary"]["total_requests"])))
+    for metric in metrics:
+        string_value = json_lookup(output, metric[1])
+        if string_value is None:
+            print(f"WARNING: no field {metric[1]} in llm-load-test output")
+            continue
+        float_value = 0.0
+        try:
+            float_value = float(string_value)
+        except ValueError:
+            print(f"WARNING: cannot convert {metric[1]}={string_value} to float")
+        entries.append(Entry(metric[0].idx, begin_time, end_time, float_value))
 
     with open("metric-data-0.csv", "w") as f:
         f.write("\n".join([str(entry) for entry in entries]))
