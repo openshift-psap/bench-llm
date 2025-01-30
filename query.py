@@ -4,10 +4,7 @@
 
 import sys
 import json
-from dataclasses import dataclass, is_dataclass, asdict
-from enum import Enum
-from typing import Dict, List, Any, Optional, Tuple
-from functools import reduce
+from typing import List
 import argparse
 import opensearchpy
 
@@ -30,7 +27,8 @@ def main() -> int:
     parser.add_argument("--iterations", help="list of run iterations to fetch results for, ex: <uuid-1>,<uuid-2>,<uuid-3>...")
     parser.add_argument("--metric-types", help="list of metric types to fetch results for, ex: <name-1>,<name-2>,<name-3>...")
     parser.add_argument("--params", help="list of parameters from payload to include with the output")
-    parser.add_argument('-o', "--output", help="path to create output file, format is determined by file extension. '.json'/'.csv' supported")
+    parser.add_argument("-o", "--output", help="path to create output file, format is determined by file extension. '.json'/'.csv' supported")
+    parser.add_argument("--sql", action="store_true", help="print the SQL that will run against OpenSearch")
     args = parser.parse_args()
 
     runs: List[str] = args.runs.split(",") if args.runs is not None else []
@@ -67,7 +65,7 @@ def main() -> int:
 
     final_filter = "" if len(filters) == 0 else " AND " + " AND ".join(filters)
     final_query = raw_query.format(final_filter)
-    print(f"Running:\n{final_query}\n\n")
+    if args.sql: print(f"Running:\n{final_query}\n\n")
     results = sql(client, final_query)
 
     cols = ["run-uuid", "iteration-uuid"] + [*params] + ["metric_type", "value"]
@@ -86,7 +84,7 @@ def main() -> int:
 
         final_param_filter = " AND ".join(combined_filter)
         params_final_query = params_raw_query.format(final_param_filter)
-        print(f"Running:\n{params_final_query}\n\n")
+        if args.sql: print(f"Running:\n{params_final_query}\n\n")
         params_results = sql(client, params_final_query)
         if len(params_results) == 0:
             print("ERROR: no matching params found")
