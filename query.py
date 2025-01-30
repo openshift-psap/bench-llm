@@ -53,7 +53,7 @@ def main() -> int:
         ssl_show_warn = False,
     )
 
-    raw_query = "SELECT [cdm_metric_desc.run.run-uuid] as run-uuid, [cdm_metric_desc.iteration.iteration-uuid] as iteration-uuid, [cdm_metric_desc.metric_desc.metric_desc-uuid] as metric_desc-uuid, [cdm_metric_desc.metric_desc.type] as metric_type, [cdm_metric_data.metric_data.value] as value FROM cdmv8dev-metric_desc cdm_metric_desc JOIN cdmv8dev-metric_data cdm_metric_data ON [cdm_metric_desc.metric_desc.metric_desc-uuid]=[cdm_metric_data.metric_desc.metric_desc-uuid] WHERE [iteration] IS NOT NULL {};"
+    raw_query = "SELECT [cdm_metric_desc.run.run-uuid] as run-uuid, [cdm_metric_desc.iteration.iteration-uuid] as iteration-uuid, [cdm_metric_desc.metric_desc.type] as metric_type, [cdm_metric_data.metric_data.value] as value FROM cdmv8dev-metric_desc cdm_metric_desc JOIN cdmv8dev-metric_data cdm_metric_data ON [cdm_metric_desc.metric_desc.metric_desc-uuid]=[cdm_metric_data.metric_desc.metric_desc-uuid] WHERE [iteration] IS NOT NULL {};"
 
 
     run_filter = "(" + " OR ".join([f"[cdm_metric_desc.run.run-uuid] = '{r}'" for r in runs]) + ")"
@@ -70,7 +70,7 @@ def main() -> int:
     print(f"Running:\n{final_query}\n\n")
     results = sql(client, final_query)
 
-    cols = ["run-uuid", "iteration-uuid", "metric_desc-uuid"] + [*params] + ["metric_type", "value"]
+    cols = ["run-uuid", "iteration-uuid"] + [*params] + ["metric_type", "value"]
 
     # OpenSearch SQL doesn't allow you to join more than 2 indices :(
     if len(params) > 0:
@@ -88,16 +88,19 @@ def main() -> int:
         params_final_query = params_raw_query.format(final_param_filter)
         print(f"Running:\n{params_final_query}\n\n")
         params_results = sql(client, params_final_query)
+        if len(params_results) == 0:
+            print("ERROR: no matching params found")
+            return 1
+
         arg_dict = {}
         for params_result in params_results:
             if params_result[0] not in arg_dict:
                 arg_dict[params_result[0]] = {}
 
             arg_dict[params_result[0]][params_result[1]] = params_result[2]
-
         for result in results:
             param_entries = [arg_dict[result[1]][param] for param in params]
-            result.insert(3, *param_entries)
+            result.insert(2, *param_entries)
 
     row_format ="{:>30}  " * (len(cols))
     print(row_format.format(*cols))
