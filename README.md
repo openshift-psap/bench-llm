@@ -5,6 +5,26 @@ To launch a test, run this on the Crucible controller: `crucible run --from-file
 
 All options from the llm-load-test config file are present in run-llm.json prefixed by `config_`.
 
+## Retrieve The Results
+
+You can use the included `query.py` script to retrieve the results from the benchmark run. Many other usage metrics from tools may have been
+uploaded to the OpenSearch database as well, but this script will help you download the relevant llm-load-test metrics so you may
+more easily plot and analyze them.
+```
+usage: query.py [-h] [--runs RUNS] [--iterations ITERATIONS] [--metric-types METRIC_TYPES] [--params PARAMS] [-o OUTPUT]
+
+options:
+  -h, --help            show this help message and exit
+  --runs RUNS           list of run uuids to fetch results for, ex: <uuid-1>,<uuid-2>,<uuid-3>...
+  --iterations ITERATIONS
+                        list of run iterations to fetch results for, ex: <uuid-1>,<uuid-2>,<uuid-3>...
+  --metric-types METRIC_TYPES
+                        list of metric types to fetch results for, ex: <name-1>,<name-2>,<name-3>...
+  --params PARAMS       list of parameters from payload to include with the output
+  -o OUTPUT, --output OUTPUT
+                        path to create output file, format is determined by file extension. '.json'/'.csv' supported
+```
+
 ## Files Included
 
 - [config.yaml.j2](config.yaml.j2): Template file to generate [llm-load-test](https://github.com/openshift-psap/llm-load-test) config
