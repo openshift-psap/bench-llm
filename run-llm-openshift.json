@@ -5,7 +5,7 @@
   "endpoints": [
     {
       "type": "k8s",
-      "controller-ip": "your-controller",
+      "controller-ip": "your-controller-ip",
       "host": "localhost",
       "user": "root",
       "userenv": "fedora40",
@@ -27,9 +27,6 @@
                   "IPC_LOCK"
                 ]
               }
-            },
-            "nodeSelector": {
-              "kubernetes.io/hostname": "name-of-k8s-node"
             }
           }
         }
