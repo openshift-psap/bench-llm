@@ -75,12 +75,54 @@ Each of these `runs` and `iterations` are uniquely identified in OpenSearch with
 The last thing `crucible run ...` will output is an overview of the results that were created.
 Make a note of the run uuid and the iteration uuid's.
 
+```
+...
+run-id: 4a0e230c-6ece-4dab-8279-2686ffbb60b5
+  tags: topology=none
+  benchmark: llm
+  common params: < all of the param values that were used > 
+  metrics:
+    source: sar-net
+      types: L2-Gbps packets-sec
+    source: mpstat
+      types: Busy-CPU NonBusy-CPU
+    source: procstat
+      types: interrupts-sec
+    source: llm
+      types: < all of the possible metrics we can query >
+    source: iostat
+      types: avg-req-size-kB avg-service-time-ms kB-sec operations-merged-sec operations-sec percent-merged avg-queue-length percent-utilization
+    source: sar-mem
+      types: Page-faults-sec KB-Paged-in-sec KB-Paged-out-sec Pages-freed-sec Pages-swapped-in-sec Pages-swapped-out-sec reclaimed-pages-sec VM-Efficiency kswapd-scanned-pages-sec scanned-pages-sec
+    source: sar-scheduler
+      types: Load-Average-01m Load-Average-05m Load-Average-15m Process-List-Size Run-Queue-Length
+    source: sar-tasks
+      types: Context-switches-sec Processes-created-sec
+    iteration-id: 7659F3C2-E412-11EF-85C3-A0383E9CC027
+      unique params:
+      primary-period name: measurement
+      samples:
+        sample-id: 80DFF8F0-E412-11EF-9ABD-B2E68BC21BD1
+          primary period-id: 80E08E82-E412-11EF-94B1-CBE719288AEF
+          period range: begin: 1738795188000 end: 1738795255000
+          period length: 67 seconds
+            result: (llm::throughput) samples: 30.533333 mean: 30.533333 min: 30.533333 max: 30.533333 stddev: NaN stddevpct: NaN
+...
+```
+
 Then on the controller try running:
 ```
-$ python3 query.py --runs=<your-run-uuid> --metric-types=throughput,ttft-max --params=config_load_options_concurrency
+$ python3 query.py --runs=4a0e230c-6ece-4dab-8279-2686ffbb60b5 --metric-types=throughput,ttft-max --params=config_load_options_concurrency
+                      run-uuid                  iteration-uuid  config_load_options_concurrency                     metric_type                           value
+     4a0e230c-6ece-4dab-827...       7659F3C2-E412-11EF-85C...                               1                      throughput              30.533333333333335
+     4a0e230c-6ece-4dab-827...       7659F3C2-E412-11EF-85C...                               1                        ttft-max               575.4344463348389
 ```
 
 This will fetch the results of the test from OpenSearch and print you a table of throughput and ttft-max metrics that llm-load-test generated.
+If there are multiple iterations in your run, you can select them using `--iterations`. By default every iteration is selected. You can also dump this table to a
+JSON or CSV file automatically with the `-o` flag. Since there are usually more parameters to the test than you care to see in the output, all of them are hidden by default.
+If you'd like to add a column for a particular parameter value, like `config_load_options_concurrency` in the example above, you may pass a list of parameters to the `--params` flag.
+See the `--help` output for more options and details.
 
 ## Querying the Results
 
