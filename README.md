@@ -51,12 +51,15 @@ For instance, to try multiple concurrency values in one run you can set:
 Next, we just need to tell Crucible where to run your test.
 
 - __If you're targeting RHEL__: Simply replace `.endpoints[0].host` with the address of
-your SSH accessible SUT. Crucible will SSH into this host to run the benchmark.
+your SSH accessible SUT. Crucible will SSH into this address to run your benchmark.
+You must have passwordless SSH access. Crucible will raise an error if hit with a password prompt.
 
 - __If you're targeting OpenShift__: Replace `.endpoints[0].host` with the address of a machine that has access to the cluster kubeconfig.
 Note that this machine _should not_ be the SUT. If the cluster was installed using a bastion, this can be the bastion.
 Otherwise, just copy your kubeconfig to the controller you are using and keep the default `localhost` host value.
-This will use the controller itself. Make sure to also fill in `.endpoints[0].controller-ip` with the IP of the controller you are running the benchmark from.
+This will use the controller itself.
+Even if you are just using `localhost`, you must have passwordless SSH access to this host. Crucible will raise an error if prompted for a password.
+Make sure to also fill in `.endpoints[0].controller-ip` with the IP of the controller you are running the benchmark from.
 
 With your run configured you can finally launch the test using:
 ```

@@ -14,12 +14,11 @@
             }
           ],
           "config": {
-            "host": "sutest@hostname",
+            "host": "hostname",
             "settings": {
-              "userenv": "rhel-ai",
+              "userenv": "fedora40",
               "osruntime": "podman",
               "podman-settings": {
-                "device": "nvidia.com/gpu=all",
                 "shm-size": "10.00gb"
               },
               "cpu-partitioning": false
