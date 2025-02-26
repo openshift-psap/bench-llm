@@ -49,6 +49,9 @@ def main() -> int:
         verify_certs = False,
         ssl_assert_hostname = False,
         ssl_show_warn = False,
+        timeout=30,
+        max_retries=10,
+        retry_on_timeout=True,
     )
 
     raw_query = "SELECT [cdm_metric_desc.run.run-uuid] as run-uuid, [cdm_metric_desc.iteration.iteration-uuid] as iteration-uuid, [cdm_metric_desc.metric_desc.type] as metric_type, [cdm_metric_data.metric_data.value] as value FROM cdmv8dev-metric_desc cdm_metric_desc JOIN cdmv8dev-metric_data cdm_metric_data ON [cdm_metric_desc.metric_desc.metric_desc-uuid]=[cdm_metric_data.metric_desc.metric_desc-uuid] WHERE [iteration] IS NOT NULL {};"
