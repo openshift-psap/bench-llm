@@ -9,11 +9,22 @@ import argparse
 import opensearchpy
 
 def sql(client, query) -> List:
-    return client.transport.perform_request(
+    rows = []
+    scroll = client.transport.perform_request(
         "POST",
         "/_plugins/_sql",
-        body={"query": query}
-    )["datarows"]
+        body={"query": query, "fetch_size": 1000}
+    )
+    rows.extend(scroll["datarows"])
+    while "cursor" in scroll:
+        scroll = client.transport.perform_request(
+            "POST",
+            "/_plugins/_sql",
+            body={"cursor": scroll["cursor"]}
+        )
+        rows.extend(scroll["datarows"])
+
+    return rows
 
 def truncstr(s, limit=10) -> str:
     if len(s) > limit:
@@ -54,7 +65,7 @@ def main() -> int:
         retry_on_timeout=True,
     )
 
-    raw_query = "SELECT [cdm_metric_desc.run.run-uuid] as run-uuid, [cdm_metric_desc.iteration.iteration-uuid] as iteration-uuid, [cdm_metric_desc.metric_desc.type] as metric_type, [cdm_metric_data.metric_data.value] as value FROM cdmv8dev-metric_desc cdm_metric_desc JOIN cdmv8dev-metric_data cdm_metric_data ON [cdm_metric_desc.metric_desc.metric_desc-uuid]=[cdm_metric_data.metric_desc.metric_desc-uuid] WHERE [iteration] IS NOT NULL {};"
+    raw_query = "SELECT [cdm_metric_desc.run.run-uuid] as run-uuid, [cdm_metric_desc.iteration.iteration-uuid] as iteration-uuid, [cdm_metric_desc.metric_desc.type] as metric_type, [cdm_metric_data.metric_data.value] as value FROM cdmv8dev-metric_desc cdm_metric_desc JOIN cdmv8dev-metric_data cdm_metric_data ON [cdm_metric_desc.metric_desc.metric_desc-uuid]=[cdm_metric_data.metric_desc.metric_desc-uuid] WHERE [iteration] IS NOT NULL {} LIMIT 10000;"
 
 
     run_filter = "(" + " OR ".join([f"[cdm_metric_desc.run.run-uuid] = '{r}'" for r in runs]) + ")"
@@ -75,7 +86,7 @@ def main() -> int:
 
     # OpenSearch SQL doesn't allow you to join more than 2 indices :(
     if len(params) > 0:
-        params_raw_query = "SELECT iteration.iteration-uuid, param.arg, param.val FROM cdmv8dev-param WHERE {}"
+        params_raw_query = "SELECT iteration.iteration-uuid, param.arg, param.val FROM cdmv8dev-param WHERE {} LIMIT 10000;"
         relevant_iterations = list({result[1] for result in results})
         param_filter = "(" + " OR ".join([f"[param.arg] = '{p}'" for p in params]) + ")"
         iteration_filter = "(" + " OR ".join([f"[iteration.iteration-uuid] = '{i}'" for i in relevant_iterations]) + ")"
