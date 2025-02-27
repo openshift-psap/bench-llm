@@ -99,9 +99,9 @@ def main() -> int:
                 arg_dict[params_result[0]] = {}
 
             arg_dict[params_result[0]][params_result[1]] = params_result[2]
-        for result in results:
+        for n, result in enumerate(results):
             param_entries = [arg_dict[result[1]][param] for param in params]
-            result.insert(2, *param_entries)
+            results[n] = result[:2] + param_entries + result[2:]
 
     row_format ="{:>30}  " * (len(cols))
     print(row_format.format(*cols))
