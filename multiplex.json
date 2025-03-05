@@ -3,48 +3,22 @@
     "validations": {
         "generic_string": {
             "description": "all types of strings",
-            "args": [
-                "repo_tag",
-                "config_output_format",
-                "config_output_dir",
-                "config_storage_type",
-                "config_dataset_file",
-                "config_load_options_type",
-                "config_plugin",
-                "config_plugin_options_model_name",
-                "config_plugin_options_host",
-                "config_plugin_options_endpoint"
-            ],
+            "args": [],
             "vals": ".+"
         },
         "integer_ge_zero": {
             "description": "a whole number >= 0",
-            "args": [
-                "config_dataset_max_queries",
-                "config_dataset_min_input_tokens",
-                "config_dataset_max_input_tokens",
-                "config_dataset_min_output_tokens",
-                "config_dataset_max_output_tokens",
-                "config_dataset_max_sequence_tokens",
-                "config_load_options_concurrency",
-                "config_load_options_duration",
-                "config_extra_metadata_replicas"
-            ],
+            "args": [],
             "vals": "[0-9]+"
         },
         "boolean": {
             "description": "True or False",
-            "args": [
-                "config_plugin_options_use_tls",
-                "config_plugin_options_streaming"
-            ],
+            "args": [],
             "vals": "True|true|False|false"
         },
         "string_no_template": {
             "description": "Ensure the string does not contain a variable placeholder '{' or '}'",
-            "args": [
-                "config_output_file"
-            ],
+            "args": [],
             "vals": "^((?!{|}).)*$"
         }
     }

@@ -6,7 +6,7 @@
     },
     "userenvs": [
         {
-            "name": "fedora40",
+            "name": "fedora41",
             "requirements": [
                 "pip"
             ]
@@ -18,15 +18,7 @@
             "type": "python3",
             "python3_info": {
                 "packages": [
-                    "jinja2",
-                    "pyyaml",
-                    "numpy",
-                    "pandas",
-                    "pylint",
-                    "isort",
-                    "flake8",
-                    "caikit-nlp-client",
-                    "urllib3"
+                    "guidellm"
                 ]
             }
         }
