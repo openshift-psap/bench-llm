@@ -1,6 +1,6 @@
 # bench-llm
 
-A Crucible benchmark wrapper for [llm-load-test](https://github.com/openshift-psap/llm-load-test).
+A Crucible benchmark wrapper for [guidellm](https://github.com/neuralmagic/guidellm).
 To launch a test, run this on the Crucible controller: `crucible run --from-file run-llm.json`
 
 All options from the llm-load-test config file are present in run-llm.json prefixed by `config_`.
