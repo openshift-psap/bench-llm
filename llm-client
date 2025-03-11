@@ -11,7 +11,7 @@ sys.stderr = fp_err
 import argparse
 import subprocess
 from typing import List, Literal, Optional, TypeAlias, Union, get_origin, get_args
-from dataclasses import asdict, dataclass, field, fields, MISSING
+from dataclasses import asdict, dataclass, fields, MISSING
 from enum import Enum
 import json
 
@@ -36,7 +36,7 @@ class DataType(Enum):
 
 
 class BackendEngine(Enum):
-    OPENAI_SERVER = "openai_server"
+    OPENAI_HTTP = "openai_http"
 
     def __str__(self):
         return self.value
@@ -58,7 +58,7 @@ class Params:
     guidellm_target: str
     guidellm_data: str
     guidellm_data_type: DataType
-    guidellm_backend: BackendEngine = BackendEngine.OPENAI_SERVER
+    guidellm_backend: BackendEngine = BackendEngine.OPENAI_HTTP
     guidellm_model: Optional[str] = None
     guidellm_tokenizer: Optional[str] = None
     guidellm_rate_type: RateType = RateType.SWEEP
@@ -102,7 +102,7 @@ def main():
         print("Do not change name of output file, this is not supported")
         return 1
 
-    # Run guidellm, save results to output.json
+    # Convert the "guidellm_*" fields of the Params struct to cli args for guidellm
     cli_args = []
     for field, value in asdict(params).items():
         if "guidellm" in field and value is not None:
@@ -112,6 +112,7 @@ def main():
             else:
                 cli_args.append(f"--{field.replace("guidellm_", "").replace("_", "-")}={value}")
 
+    # Run guidellm, save results to output.json
     guidellm_cmd = "guidellm " + " ".join(cli_args)
     print(f"Running: {guidellm_cmd}")
     run(guidellm_cmd)
