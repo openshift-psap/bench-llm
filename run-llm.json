@@ -64,7 +64,50 @@
       "mv-params": {
         "sets": [
           {
-            "params": []
+            "params": [
+              {
+                "arg": "guidellm_target",
+                "vals": [
+                  "localhost:8000"
+                ]
+              },
+              {
+                "arg": "guidellm_data",
+                "vals": [
+                  "prompt_tokens=128,prompt_tokens_variance=32,generated_tokens=128,generated_tokens_variance=32"
+                ]
+              },
+              {
+                "arg": "guidellm_data_type",
+                "vals": [
+                  "emulated"
+                ]
+              },
+              {
+                "arg": "guidellm_backend",
+                "vals": [
+                  "openapi_http"
+                ]
+              },
+              {
+                "arg": "guidellm_model",
+                "vals": [
+                  "ibm-granit/granite-3.1-2b-instruct"
+                ]
+              },
+              {
+                "arg": "guidellm_rate_type",
+                "vals": [
+                  "sweep"
+                ]
+              },
+              {
+                "arg": "guidellm_max_seconds",
+                "vals": [
+                  "120"
+                ]
+              }
+            ]
           }
         ]
       }

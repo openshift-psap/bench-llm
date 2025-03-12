@@ -3,23 +3,39 @@
     "validations": {
         "generic_string": {
             "description": "all types of strings",
-            "args": [],
+            "args": [
+                "guidellm_target"
+            ],
             "vals": ".+"
         },
         "integer_ge_zero": {
             "description": "a whole number >= 0",
-            "args": [],
+            "args": [
+                "guidellm_max_seconds",
+                "guidellm_max_requests"
+            ],
             "vals": "[0-9]+"
         },
         "boolean": {
             "description": "True or False",
-            "args": [],
+            "args": [
+                "guidellm_enable_continuous_refresh"
+            ],
             "vals": "True|true|False|false"
         },
-        "string_no_template": {
-            "description": "Ensure the string does not contain a variable placeholder '{' or '}'",
-            "args": [],
-            "vals": "^((?!{|}).)*$"
+        "output_path": {
+            "description": "The output path is provided as a parameter for completeness, but cannot be changed. This check is present in a few layers.",
+            "args": [
+                "guidellm_output_path"
+            ],
+            "vals": "output.json"
+        },
+        "valid_backends": {
+            "description": "Ensure the backend is one of the valid options.",
+            "args": [
+                "guidellm_backend"
+            ],
+            "vals": "openai_http"
         }
     }
 }

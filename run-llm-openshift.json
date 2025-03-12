@@ -71,135 +71,45 @@
           {
             "params": [
               {
-                "arg": "repo_tag",
+                "arg": "guidellm_target",
                 "vals": [
-                  "main"
+                  "localhost:8000"
                 ]
               },
               {
-                "arg": "config_output_format",
+                "arg": "guidellm_data",
                 "vals": [
-                  "json"
+                  "prompt_tokens=128,prompt_tokens_variance=32,generated_tokens=128,generated_tokens_variance=32"
                 ]
               },
               {
-                "arg": "config_output_dir",
+                "arg": "guidellm_data_type",
                 "vals": [
-                  "./output/"
+                  "emulated"
                 ]
               },
               {
-                "arg": "config_output_file",
+                "arg": "guidellm_backend",
                 "vals": [
-                  "output.json"
+                  "openapi_http"
                 ]
               },
               {
-                "arg": "config_storage_type",
+                "arg": "guidellm_model",
                 "vals": [
-                  "local"
+                  "ibm-granit/granite-3.1-2b-instruct"
                 ]
               },
               {
-                "arg": "config_dataset_file",
+                "arg": "guidellm_rate_type",
                 "vals": [
-                  "datasets/openorca_large_subset_011.jsonl"
+                  "sweep"
                 ]
               },
               {
-                "arg": "config_dataset_max_queries",
+                "arg": "guidellm_max_seconds",
                 "vals": [
-                  "1000"
-                ]
-              },
-              {
-                "arg": "config_dataset_min_input_tokens",
-                "vals": [
-                  "0"
-                ]
-              },
-              {
-                "arg": "config_dataset_max_input_tokens",
-                "vals": [
-                  "1024"
-                ]
-              },
-              {
-                "arg": "config_dataset_min_output_tokens",
-                "vals": [
-                  "0"
-                ]
-              },
-              {
-                "arg": "config_dataset_max_output_tokens",
-                "vals": [
-                  "1024"
-                ]
-              },
-              {
-                "arg": "config_dataset_max_sequence_tokens",
-                "vals": [
-                  "2048"
-                ]
-              },
-              {
-                "arg": "config_load_options_type",
-                "vals": [
-                  "constant"
-                ]
-              },
-              {
-                "arg": "config_load_options_concurrency",
-                "vals": [
-                  "1"
-                ]
-              },
-              {
-                "arg": "config_load_options_duration",
-                "vals": [
-                  "30"
-                ]
-              },
-              {
-                "arg": "config_plugin",
-                "vals": [
-                  "openai_plugin"
-                ]
-              },
-              {
-                "arg": "config_plugin_options_use_tls",
-                "vals": [
-                  "False"
-                ]
-              },
-              {
-                "arg": "config_plugin_options_streaming",
-                "vals": [
-                  "True"
-                ]
-              },
-              {
-                "arg": "config_plugin_options_model_name",
-                "vals": [
-                  "/mnt/models/"
-                ]
-              },
-              {
-                "arg": "config_plugin_options_host",
-                "vals": [
-                  "https://model-endpoint.example"
-                ]
-              },
-              {
-                "arg": "config_plugin_options_endpoint",
-                "vals": [
-                  "/v1/completions"
-                ]
-              },
-              {
-                "arg": "config_extra_metadata_replicas",
-                "vals": [
-                  "1"
+                  "120"
                 ]
               }
             ]
