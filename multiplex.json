@@ -4,7 +4,10 @@
         "generic_string": {
             "description": "all types of strings",
             "args": [
-                "guidellm_target"
+                "guidellm_target",
+                "guidellm_data",
+                "guidellm_model",
+                "guidellm_tokenizer"
             ],
             "vals": ".+"
         },
@@ -22,6 +25,27 @@
                 "guidellm_enable_continuous_refresh"
             ],
             "vals": "True|true|False|false"
+        },
+        "data_type": {
+            "description": "Ensure the data type is one of the valid options in guidellm.",
+            "args": [
+                "guidellm_data_type"
+            ],
+            "vals": "emulated|file|transformers"
+        },
+        "rate_type": {
+            "description": "Ensure the rate type is one of the valid options in guidellm.",
+            "args": [
+                "guidellm_rate_type"
+            ],
+            "vals": "sweep|synchronous|throughput|constant|poisson"
+        },
+        "list_of_floats": {
+            "description": "Comma separated list of floating point numbers.",
+            "args": [
+                "guidellm_rate"
+            ],
+            "vals": "(([0-9]+(\\.[0-9])?),)*([0-9]+(\\.[0-9]+)?)"
         },
         "output_path": {
             "description": "The output path is provided as a parameter for completeness, but cannot be changed. This check is present in a few layers.",
