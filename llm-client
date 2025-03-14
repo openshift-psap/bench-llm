@@ -18,7 +18,7 @@ import json
 DEPENDENCIES = ["guidellm"]
 
 def is_optional(field_t):
-    return get_origin(field_t) is Union and type(None) in get_args(field_t)
+    return get_origin(field_t) is Optional or (get_origin(field_t) is Union and type(None) in get_args(field_t))
 
 @dataclass
 class CmdResult:
@@ -59,12 +59,12 @@ class Params:
     guidellm_data: str
     guidellm_data_type: DataType
     guidellm_backend: BackendEngine = BackendEngine.OPENAI_HTTP
-    guidellm_model: Optional[str] = None
-    guidellm_tokenizer: Optional[str] = None
+    guidellm_model: str = None
+    guidellm_tokenizer: str = None
     guidellm_rate_type: RateType = RateType.SWEEP
-    guidellm_rate: Optional[List[float]] = None
+    guidellm_rate: List[float] = None
     guidellm_max_seconds: int = 120
-    guidellm_max_requests: Optional[MaxRequests] = None
+    guidellm_max_requests: MaxRequests = None
     guidellm_output_path: str = "output.json"
     guidellm_enable_continuous_refresh: bool = False
 
