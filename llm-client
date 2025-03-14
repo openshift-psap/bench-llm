@@ -84,9 +84,10 @@ def main():
 
     # Ensure we have dependencies
     for name in DEPENDENCIES:
-        ret = run(f"which {name}", ignore_output=True)
+        ret = run(f"which {name}")
         if ret.rc != 0:
             print(f"Missing dependency: {name}")
+            print(f"\t{ret.stderr}")
             return 1
 
     parser = argparse.ArgumentParser()
