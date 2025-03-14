@@ -8,11 +8,21 @@
         {
             "name": "fedora41",
             "requirements": [
+                "dnf",
                 "pip"
             ]
         }
     ],
     "requirements": [
+        {
+            "name": "dnf",
+            "type": "distro",
+            "distro_info": {
+                "packages": [
+                    "which"
+                ]
+            }
+        },
         {
             "name": "pip",
             "type": "python3",
