@@ -8,7 +8,7 @@
       "controller-ip": "your-controller-ip",
       "host": "localhost",
       "user": "root",
-      "userenv": "fedora40",
+      "userenv": "fedora41",
       "unique-project": 1,
       "client": "1",
       "config": [
@@ -27,6 +27,9 @@
                   "IPC_LOCK"
                 ]
               }
+            },
+            "nodeSelector": {
+              "kubernetes.io/hostname": "<name of node to run guidellm on>"
             }
           }
         }
@@ -110,6 +113,12 @@
                 "arg": "guidellm_max_seconds",
                 "vals": [
                   "120"
+                ]
+              },
+              {
+                "arg": "guidellm_tokenizer",
+                "vals": [
+                  "ibm-granite/granite-3.1-8b-instruct"
                 ]
               }
             ]
