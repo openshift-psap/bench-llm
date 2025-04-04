@@ -131,8 +131,8 @@ class Phase():
         json_path = self.metric_data + ".json"
 
         # we have timestamp in seconds, need ms
-        start_time = int(float(self.metrics["start_time"])) * 1000
-        end_time = int(float(self.metrics["end_time"])) * 1000
+        start_time = int(float(0 if self.metrics["start_time"] is None else self.metrics["start_time"])) * 1000
+        end_time = int(float(0 if self.metrics["end_time"] is None else self.metrics["end_time"])) * 1000
 
         locations = [
             ("request_count", MetricClass.COUNT),
