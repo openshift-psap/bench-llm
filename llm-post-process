@@ -147,7 +147,6 @@ class Phase():
             ("inter_token_latency", MetricClass.COUNT),
             ("inter_token_latency_percentiles", MetricClass.COUNT),
             ("output_token_throughput", MetricClass.THROUGHPUT),
-            ("output_token_throughput_percentiles", MetricClass.THROUGHPUT),
             ("prompt_token", MetricClass.COUNT),
             ("prompt_token_percentiles", MetricClass.COUNT),
             ("output_token", MetricClass.COUNT),
@@ -183,7 +182,7 @@ class Phase():
                 for percentile in percentiles:
                     metric_name = self.safe_name(location[0].replace("_percentiles", f"_p{percentile}"))
                     idx = metric_idx_map[metric_name]
-                    string_value = json_lookup(self.metrics, location[0][percentile])
+                    string_value = json_lookup(self.metrics, location[0] + "." + percentile)
                     if string_value is None:
                         print(f"WARNING: no field {location[0]}.{percentile} in guidellm output")
                         continue
