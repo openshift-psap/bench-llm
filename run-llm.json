@@ -92,7 +92,7 @@
               {
                 "arg": "guidellm_model",
                 "vals": [
-                  "ibm-granit/granite-3.1-2b-instruct"
+                  "ibm-granite/granite-3.1-2b-instruct"
                 ]
               },
               {
@@ -111,6 +111,18 @@
                 "arg": "guidellm_tokenizer",
                 "vals": [
                   "ibm-granite/granite-3.1-8b-instruct"
+                ]
+              },
+              {
+                "arg": "guidellm_max_concurrency",
+                "vals": [
+                  "2048"
+                ]
+              },
+              {
+                "arg": "guidellm_request_timeout",
+                "vals": [
+                  "300"
                 ]
               }
             ]

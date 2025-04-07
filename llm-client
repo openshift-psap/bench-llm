@@ -67,6 +67,9 @@ class Params:
     guidellm_max_requests: MaxRequests = None
     guidellm_output_path: str = "output.json"
     guidellm_enable_continuous_refresh: bool = False
+    # Env variables
+    guidellm_max_concurrency: int = 512
+    guidellm_request_timeout: int = 300 # 60 * 5 seconds
 
 def run(cmd: str, ignore_output=False, out_file=fp_out, err_file=fp_err) -> CmdResult:
     ran = subprocess.run(cmd, shell=True, stdout=(subprocess.DEVNULL if ignore_output else subprocess.PIPE), stderr=(subprocess.DEVNULL if ignore_output else subprocess.PIPE))
@@ -103,6 +106,12 @@ def main():
         print("Do not change name of output file, this is not supported")
         return 1
 
+    env_params = ["guidellm_max_concurrency", "guidellm_request_timeout"]
+    env_args = []
+    for param in env_params:
+        value = asdict(params)[param]
+        env_args.append(f"{param.replace("guidellm_", "guidellm__").upper()}={value}")
+
     # Convert the "guidellm_*" fields of the Params struct to cli args for guidellm
     cli_args = []
     for field, value in asdict(params).items():
@@ -114,7 +123,7 @@ def main():
                 cli_args.append(f"--{field.replace("guidellm_", "").replace("_", "-")}={value}")
 
     # Run guidellm, save results to output.json
-    guidellm_cmd = "guidellm " + " ".join(cli_args)
+    guidellm_cmd = " ".join(env_args) + " guidellm " + " ".join(cli_args)
     print(f"Running: {guidellm_cmd}")
     run(guidellm_cmd)
 

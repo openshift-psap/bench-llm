@@ -15,7 +15,9 @@
             "description": "a whole number >= 0",
             "args": [
                 "guidellm_max_seconds",
-                "guidellm_max_requests"
+                "guidellm_max_requests",
+                "guidellm_max_concurrency",
+                "guidellm_request_timeout"
             ],
             "vals": "[0-9]+"
         },
