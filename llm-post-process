@@ -141,41 +141,75 @@ class Phase():
             ("duration", MetricClass.COUNT),
             ("completed_request_rate", MetricClass.THROUGHPUT),
             ("request_latency", MetricClass.COUNT),
+            ("request_latency_percentiles", MetricClass.COUNT),
             ("time_to_first_token", MetricClass.COUNT),
+            ("time_to_first_token_percentiles", MetricClass.COUNT),
             ("inter_token_latency", MetricClass.COUNT),
+            ("inter_token_latency_percentiles", MetricClass.COUNT),
             ("output_token_throughput", MetricClass.THROUGHPUT),
+            ("output_token_throughput_percentiles", MetricClass.THROUGHPUT),
             ("prompt_token", MetricClass.COUNT),
+            ("prompt_token_percentiles", MetricClass.COUNT),
             ("output_token", MetricClass.COUNT),
+            ("output_token_percentiles", MetricClass.COUNT),
         ]
+
+        percentiles = ["50", "90", "95", "99"]
 
         metrics: List[Metric] = []
         metric_idx = 0
         metric_idx_map = {}
         for location in locations:
-            metric_name = self.safe_name(location[0])
-            metric = Metric(metric_idx, Desc(location[1], "llm", metric_name), {})
-            metric_idx_map[location[0]] = metric_idx
-            metrics.append(metric)
-            metric_idx += 1
+            if "_percentiles" in location[0]:
+                for percentile in percentiles:
+                    metric_name = self.safe_name(location[0].replace("_percentiles", f"_p{percentile}"))
+                    metric = Metric(metric_idx, Desc(location[1], "llm", metric_name), {})
+                    metric_idx_map[metric_name] = metric_idx
+                    metrics.append(metric)
+                    metric_idx += 1
+            else:
+                metric_name = self.safe_name(location[0])
+                metric = Metric(metric_idx, Desc(location[1], "llm", metric_name), {})
+                metric_idx_map[metric_name] = metric_idx
+                metrics.append(metric)
+                metric_idx += 1
 
         with open(json_path, "w") as f:
             f.write(json.dumps([to_dict(metric) for metric in metrics]))
 
         entries: List[Entry] = []
         for location in locations:
-            idx = metric_idx_map[location[0]]
-            string_value = json_lookup(self.metrics, location[0])
-            if string_value is None:
-                print(f"WARNING: no field {location[0]} in guidellm output")
-                continue
-            float_value = 0.0
-            try:
-                float_value = float(string_value)
-            except ValueError:
-                print(f"WARNING: cannot convert {location[0]}={string_value} to float")
-                continue
-            entry = Entry(idx, start_time, end_time, float(float_value))
-            entries.append(entry)
+            if "_percentiles" in location[0]:
+                for percentile in percentiles:
+                    metric_name = self.safe_name(location[0].replace("_percentiles", f"_p{percentile}"))
+                    idx = metric_idx_map[metric_name]
+                    string_value = json_lookup(self.metrics, location[0][percentile])
+                    if string_value is None:
+                        print(f"WARNING: no field {location[0]}.{percentile} in guidellm output")
+                        continue
+                    float_value = 0.0
+                    try:
+                        float_value = float(string_value)
+                    except ValueError:
+                        print(f"WARNING: cannot convert {metric_name}={string_value} to float")
+                        continue
+                    entry = Entry(idx, start_time, end_time, float(float_value))
+                    entries.append(entry)
+            else:
+                metric_name = self.safe_name(location[0])
+                idx = metric_idx_map[metric_name]
+                string_value = json_lookup(self.metrics, location[0])
+                if string_value is None:
+                    print(f"WARNING: no field {location[0]} in guidellm output")
+                    continue
+                float_value = 0.0
+                try:
+                    float_value = float(string_value)
+                except ValueError:
+                    print(f"WARNING: cannot convert {location[0]}={string_value} to float")
+                    continue
+                entry = Entry(idx, start_time, end_time, float(float_value))
+                entries.append(entry)
 
         with open(csv_path, "w") as f:
             f.write("\n".join([str(entry) for entry in entries]))
