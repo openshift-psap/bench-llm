@@ -19,7 +19,8 @@
             "type": "distro",
             "distro_info": {
                 "packages": [
-                    "which"
+                    "which",
+                    "cmake"
                 ]
             }
         },
