@@ -44,32 +44,101 @@ class BackendEngine(Enum):
 class RateType(Enum):
     SWEEP = "sweep"
     SYNCHRONOUS = "synchronous"
+    ASYNC = "async"
     THROUGHPUT = "throughput"
     CONSTANT = "constant"
     POISSON = "poisson"
+    CONCURRENT = "concurrent"
 
     def __str__(self):
         return self.value
 
-MaxRequests: TypeAlias = Union[int, Literal["dataset"]]
+class DataSampler(Enum):
+    RANDOM = "random"
+
+    def __str__(self):
+        return self.value
 
 @dataclass
 class Params:
     guidellm_target: str
     guidellm_data: str
-    guidellm_data_type: DataType
-    guidellm_backend: BackendEngine = BackendEngine.OPENAI_HTTP
+    guidellm_rate_type: RateType
+    guidellm_backend_type: BackendEngine = BackendEngine.OPENAI_HTTP
+    guidellm_backend_args: str = None
     guidellm_model: str = None
-    guidellm_tokenizer: str = None
-    guidellm_rate_type: RateType = RateType.SWEEP
-    guidellm_rate: List[float] = None
+    guidellm_processor: str = None
+    guidellm_processor_args: str = None
+    guidellm_data_args: str = None
+    guidellm_data_sampler: DataSampler = None
+    guidellm_rate: str = None
     guidellm_max_seconds: int = 120
-    guidellm_max_requests: MaxRequests = None
+    guidellm_max_requests: int = None
+    guidellm_warmup_percent: float = None
+    guidellm_cooldown_percent: float = None
+    guidellm_random_seed: int = None
+    guidellm_disable_progress: bool = None
+    guidellm_disable_scheduler_stats: bool = None
     guidellm_output_path: str = "output.json"
     guidellm_enable_continuous_refresh: bool = False
     # Env variables
-    guidellm_max_concurrency: int = 512
+    guidellm_env: str = "prod"
+    guidellm_default_async_loop_sleep: float = 10e-5
+    guidellm_logging__disabled: bool = False
+    guidellm_logging__clear_loggers: bool = True
+    guidellm_logging__console_log_level: str = "WARNING"
+    guidellm_logging__log_file: str = None
+    guidellm_logging__log_file_level: str = None
+    guidellm_default_sweep_number: int = 10
     guidellm_request_timeout: int = 300 # 60 * 5 seconds
+    guidellm_request_http2: bool = True
+    guidellm_max_concurrency: int = 512
+    guidellm_max_worker_processes: int = 10
+    guidellm_max_add_requests_per_loop: int = 20
+    guidellm_dataset__preferred_data_columns: str = "prompt,instruction,input,inputs,question,context,text,content,body,data"
+    guidellm_dataset__preferred_data_splits: str = "test,tst,validation,val,train"
+    guidellm_preferred_prompt_tokens_source: str = None
+    guidellm_preferred_output_tokens_source: str = None
+    guidellm_preferred_backend: str = "openai"
+    guidellm_openai__api_key: str = None
+    guidellm_openai__bearer_token: str = None
+    guidellm_openai__organization: str = None
+    guidellm_openai__project: str = None
+    guidellm_openai__base_url: str = "http://localhost:8000"
+    guidellm_openai__max_output_tokens: int = 16384
+    guidellm_report_generation__source: str = ""
+    guidellm_report_generation__report_html_match: str = "window.report_data = {};"
+    guidellm_report_generation__report_html_placeholder: str = "{}"
+
+ENV_PARAMS = [
+    "guidellm_env",
+    "guidellm_default_async_loop_sleep",
+    "guidellm_logging__disabled",
+    "guidellm_logging__clear_loggers",
+    "guidellm_logging__console_log_level",
+    "guidellm_logging__log_file",
+    "guidellm_logging__log_file_level",
+    "guidellm_default_sweep_number",
+    "guidellm_request_timeout",
+    "guidellm_request_http2",
+    "guidellm_max_concurrency",
+    "guidellm_max_worker_processes",
+    "guidellm_max_add_requests_per_loop",
+    "guidellm_dataset__preferred_data_columns",
+    "guidellm_dataset__preferred_data_splits",
+    "guidellm_preferred_prompt_tokens_source",
+    "guidellm_preferred_output_tokens_source",
+    "guidellm_preferred_backend",
+    "guidellm_openai__api_key",
+    "guidellm_openai__bearer_token",
+    "guidellm_openai__organization",
+    "guidellm_openai__project",
+    "guidellm_openai__base_url",
+    "guidellm_openai__max_output_tokens",
+    "guidellm_report_generation__source",
+    "guidellm_report_generation__report_html_match",
+    "guidellm_report_generation__report_html_placeholder",
+]
 
 def run(cmd: str, ignore_output=False, out_file=fp_out, err_file=fp_err) -> CmdResult:
     ran = subprocess.run(cmd, shell=True, stdout=(subprocess.DEVNULL if ignore_output else subprocess.PIPE), stderr=(subprocess.DEVNULL if ignore_output else subprocess.PIPE))
@@ -106,9 +175,8 @@ def main():
         print("Do not change name of output file, this is not supported")
         return 1
 
-    env_params = ["guidellm_max_concurrency", "guidellm_request_timeout"]
     env_args = []
-    for param in env_params:
+    for param in ENV_PARAMS:
         value = asdict(params)[param]
         env_args.append(f"{param.replace("guidellm_", "guidellm__").upper()}={value}")
 
@@ -123,7 +191,7 @@ def main():
                 cli_args.append(f"--{field.replace("guidellm_", "").replace("_", "-")}={value}")
 
     # Run guidellm, save results to output.json
-    guidellm_cmd = " ".join(env_args) + " guidellm " + " ".join(cli_args)
+    guidellm_cmd = " ".join(env_args) + " guidellm benchmark " + " ".join(cli_args)
     print(f"Running: {guidellm_cmd}")
     run(guidellm_cmd)
 
