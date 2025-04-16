@@ -10,11 +10,15 @@ sys.stderr = fp_err
 
 import argparse
 import subprocess
-from typing import Optional
-from dataclasses import dataclass
+from typing import List, Literal, Optional, TypeAlias, Union, get_origin, get_args
+from dataclasses import asdict, dataclass, fields, MISSING
+from enum import Enum
 import json
 
-from jinja2 import Environment, FileSystemLoader
+DEPENDENCIES = ["guidellm"]
+
+def is_optional(field_t):
+    return get_origin(field_t) is Optional or (get_origin(field_t) is Union and type(None) in get_args(field_t))
 
 @dataclass
 class CmdResult:
@@ -22,77 +26,179 @@ class CmdResult:
     stdout: Optional[str]
     stderr: Optional[str]
 
+class DataType(Enum):
+    EMULATED = "emulated"
+    FILE = "file"
+    TRANSFORMERS = "transformers"
+
+    def __str__(self):
+        return self.value
+
+
+class BackendEngine(Enum):
+    OPENAI_HTTP = "openai_http"
+
+    def __str__(self):
+        return self.value
+
+class RateType(Enum):
+    SWEEP = "sweep"
+    SYNCHRONOUS = "synchronous"
+    ASYNC = "async"
+    THROUGHPUT = "throughput"
+    CONSTANT = "constant"
+    POISSON = "poisson"
+    CONCURRENT = "concurrent"
+
+    def __str__(self):
+        return self.value
+
+class DataSampler(Enum):
+    RANDOM = "random"
+
+    def __str__(self):
+        return self.value
+
+@dataclass
+class Params:
+    guidellm_target: str
+    guidellm_data: str
+    guidellm_rate_type: RateType
+    guidellm_backend_type: BackendEngine = BackendEngine.OPENAI_HTTP
+    guidellm_backend_args: str = None
+    guidellm_model: str = None
+    guidellm_processor: str = None
+    guidellm_processor_args: str = None
+    guidellm_data_args: str = None
+    guidellm_data_sampler: DataSampler = None
+    guidellm_rate: str = None
+    guidellm_max_seconds: int = 120
+    guidellm_max_requests: int = None
+    guidellm_warmup_percent: float = None
+    guidellm_cooldown_percent: float = None
+    guidellm_random_seed: int = None
+    guidellm_disable_progress: bool = None
+    guidellm_disable_scheduler_stats: bool = None
+    guidellm_output_path: str = "output.json"
+    guidellm_enable_continuous_refresh: bool = False
+    # Env variables
+    guidellm_env: str = "prod"
+    guidellm_default_async_loop_sleep: float = 10e-5
+    guidellm_logging__disabled: bool = False
+    guidellm_logging__clear_loggers: bool = True
+    guidellm_logging__console_log_level: str = "WARNING"
+    guidellm_logging__log_file: str = None
+    guidellm_logging__log_file_level: str = None
+    guidellm_default_sweep_number: int = 10
+    guidellm_request_timeout: int = 300 # 60 * 5 seconds
+    guidellm_request_http2: bool = True
+    guidellm_max_concurrency: int = 512
+    guidellm_max_worker_processes: int = 10
+    guidellm_max_add_requests_per_loop: int = 20
+    guidellm_dataset__preferred_data_columns: str = None
+    guidellm_dataset__preferred_data_splits: str = None
+    guidellm_preferred_prompt_tokens_source: str = None
+    guidellm_preferred_output_tokens_source: str = None
+    guidellm_preferred_backend: str = "openai"
+    guidellm_openai__api_key: str = None
+    guidellm_openai__bearer_token: str = None
+    guidellm_openai__organization: str = None
+    guidellm_openai__project: str = None
+    guidellm_openai__base_url: str = None
+    guidellm_openai__max_output_tokens: int = None
+    guidellm_report_generation__source: str = None
+    guidellm_report_generation__report_html_match: str = None
+    guidellm_report_generation__report_html_placeholder: str = None
+
+ENV_PARAMS = [
+    "guidellm_env",
+    "guidellm_default_async_loop_sleep",
+    "guidellm_logging__disabled",
+    "guidellm_logging__clear_loggers",
+    "guidellm_logging__console_log_level",
+    "guidellm_logging__log_file",
+    "guidellm_logging__log_file_level",
+    "guidellm_default_sweep_number",
+    "guidellm_request_timeout",
+    "guidellm_request_http2",
+    "guidellm_max_concurrency",
+    "guidellm_max_worker_processes",
+    "guidellm_max_add_requests_per_loop",
+    "guidellm_dataset__preferred_data_columns",
+    "guidellm_dataset__preferred_data_splits",
+    "guidellm_preferred_prompt_tokens_source",
+    "guidellm_preferred_output_tokens_source",
+    "guidellm_preferred_backend",
+    "guidellm_openai__api_key",
+    "guidellm_openai__bearer_token",
+    "guidellm_openai__organization",
+    "guidellm_openai__project",
+    "guidellm_openai__base_url",
+    "guidellm_openai__max_output_tokens",
+    "guidellm_report_generation__source",
+    "guidellm_report_generation__report_html_match",
+    "guidellm_report_generation__report_html_placeholder",
+]
+
 def run(cmd: str, ignore_output=False, out_file=fp_out, err_file=fp_err) -> CmdResult:
-    ran = subprocess.run(cmd, shell=True, stdout=(None if ignore_output else subprocess.PIPE), stderr=(None if ignore_output else subprocess.PIPE))
+    ran = subprocess.run(cmd, shell=True, stdout=(subprocess.DEVNULL if ignore_output else subprocess.PIPE), stderr=(subprocess.DEVNULL if ignore_output else subprocess.PIPE))
     result = CmdResult(
         ran.returncode,
         None if ignore_output else ran.stdout.decode("utf-8"),
         None if ignore_output else ran.stderr.decode("utf-8"),
     )
     if not ignore_output:
-        out_file.write(result.stdout)
-        err_file.write(result.stderr)
+        out_file.write(str(result.stdout))
+        err_file.write(str(result.stderr))
     return result
 
 def main():
-    options = dict(
-        repo_tag = 'main',
-        config_output_format = 'json',
-        config_output_dir = './output/',
-        config_output_file = 'output.json',
-        config_storage_type = 'local',
-        config_dataset_file = 'datasets/openorca_large_subset_011.jsonl',
-        config_dataset_max_queries = 1000,
-        config_dataset_min_input_tokens = 0,
-        config_dataset_max_input_tokens = 1024,
-        config_dataset_min_output_tokens = 0,
-        config_dataset_max_output_tokens = 1024,
-        config_dataset_max_sequence_tokens = 2048,
-        config_load_options_type = 'constant',
-        config_load_options_concurrency = 1,
-        config_load_options_duration = 20,
-        config_plugin = 'openai_plugin',
-        config_plugin_options_use_tls = False,
-        config_plugin_options_streaming = True,
-        config_plugin_options_model_name = 'flan-t5-small',
-        config_plugin_options_host = 'http://route.to.host',
-        config_plugin_options_endpoint = '/v1/completions',
-        config_extra_metadata_replicas = 1
-    )
+
+    # Ensure we have dependencies
+    for name in DEPENDENCIES:
+        ret = run(f"which {name}")
+        if ret.rc != 0:
+            print(f"Missing dependency: {name}")
+            print(f"\t{ret.stderr}")
+            return 1
 
     parser = argparse.ArgumentParser()
 
-    for option_name, option_default in options.items():
-        parser.add_argument(f"--{option_name}", default=option_default)
+    for field in fields(Params):
+        parser.add_argument(f"--{field.name}", type=field.type, default=field.default if field.default is not MISSING else None, required=bool(field.default is MISSING))
 
     args = parser.parse_args()
+    vargs = vars(args)
 
-    # Download the correct branch of llm-load-test
-    run("git clone https://github.com/openshift-psap/llm-load-test")
-    run(f"cd llm-load-test && git checkout {args.repo_tag}")
+    params: Params = Params(*[vargs[field.name] for field in fields(Params)])
+    if params.guidellm_output_path != "output.json":
+        print("Do not change name of output file, this is not supported")
+        return 1
 
-    # Template the config file
-    # Jinja2 template file should be copied from controller by Rickshaw
-    environment = Environment(loader=FileSystemLoader("/tmp/"))
-    template = environment.get_template("config.yaml.j2")
-    # Grab all the settings prefixed with 'config_' they correspond to fields in the
-    # llm-load-test config file
-    config_options_from_cli_args = {k: v for k, v in vars(args).items() if "config_" in k}
-    complete_config = template.render(config_options_from_cli_args)
-    with open("config.yaml", "w", encoding="utf-8") as f:
-        f.write(complete_config)
+    env_args = []
+    for param in ENV_PARAMS:
+        value = asdict(params)[param]
+        if value is not None:
+            env_args.append(f"{param.replace("guidellm_", "guidellm__").upper()}=\"{value}\"")
 
+    # Convert the "guidellm_*" fields of the Params struct to cli args for guidellm
+    cli_args = []
+    for field, value in asdict(params).items():
+        if "guidellm" in field and value is not None and field not in ENV_PARAMS:
+            if type(value) is bool:
+                if value:
+                    cli_args.append(f"--{field.replace("guidellm_", "").replace("_", "-")}")
+            else:
+                cli_args.append(f"--{field.replace("guidellm_", "").replace("_", "-")}={value}")
 
-    # Run llm-load-test
-    run("cd llm-load-test && python3 load_test.py -c ../config.yaml")
+    # Run guidellm, save results to output.json
+    guidellm_cmd = " ".join(env_args) + " guidellm benchmark " + " ".join(cli_args)
+    print(f"Running: {guidellm_cmd}")
+    run(guidellm_cmd)
 
-    # Copy the output json file from llm-load-test to a known location; this
-    # might be difficult since 'config_output_file' can include a variable that
-    # is formatted
-    run(f"cp llm-load-test/{args.config_output_dir}/{args.config_output_file} output.json")
     # Save all settings
     with open("params.json", "w") as f:
-        f.write(json.dumps(vars(args), indent=4))
+        f.write(json.dumps(vargs, indent=4, default=lambda x: x.value))
 
     return 0
 

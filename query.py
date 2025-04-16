@@ -65,7 +65,7 @@ def main() -> int:
         retry_on_timeout=True,
     )
 
-    raw_query = "SELECT [cdm_metric_desc.run.run-uuid] as run-uuid, [cdm_metric_desc.iteration.iteration-uuid] as iteration-uuid, [cdm_metric_desc.metric_desc.type] as metric_type, [cdm_metric_data.metric_data.value] as value FROM cdmv8dev-metric_desc cdm_metric_desc JOIN cdmv8dev-metric_data cdm_metric_data ON [cdm_metric_desc.metric_desc.metric_desc-uuid]=[cdm_metric_data.metric_desc.metric_desc-uuid] WHERE [iteration] IS NOT NULL {} LIMIT 10000;"
+    raw_query = "SELECT [cdm_metric_desc.run.run-uuid] as run-uuid, [cdm_metric_desc.iteration.iteration-uuid] as iteration-uuid, [cdm_metric_desc.metric_desc.type] as metric-type, [cdm_metric_desc.period.name] as period-name, [cdm_metric_data.metric_data.value] as value FROM cdmv8dev-metric_desc cdm_metric_desc JOIN cdmv8dev-metric_data cdm_metric_data ON [cdm_metric_desc.metric_desc.metric_desc-uuid]=[cdm_metric_data.metric_desc.metric_desc-uuid] WHERE [iteration] IS NOT NULL {} LIMIT 10000;"
 
 
     run_filter = "(" + " OR ".join([f"[cdm_metric_desc.run.run-uuid] = '{r}'" for r in runs]) + ")"
@@ -82,7 +82,7 @@ def main() -> int:
     if args.sql: print(f"Running:\n{final_query}\n\n")
     results = sql(client, final_query)
 
-    cols = ["run-uuid", "iteration-uuid"] + [*params] + ["metric_type", "value"]
+    cols = ["run-uuid", "iteration-uuid"] + [*params] + ["metric-type", "period-name", "value"]
 
     # OpenSearch SQL doesn't allow you to join more than 2 indices :(
     if len(params) > 0:

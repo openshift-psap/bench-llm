@@ -6,27 +6,31 @@
     },
     "userenvs": [
         {
-            "name": "fedora40",
+            "name": "fedora41",
             "requirements": [
+                "dnf",
                 "pip"
             ]
         }
     ],
     "requirements": [
         {
+            "name": "dnf",
+            "type": "distro",
+            "distro_info": {
+                "packages": [
+                    "which",
+                    "cmake"
+                ]
+            }
+        },
+        {
             "name": "pip",
             "type": "python3",
             "python3_info": {
                 "packages": [
-                    "jinja2",
-                    "pyyaml",
-                    "numpy",
-                    "pandas",
-                    "pylint",
-                    "isort",
-                    "flake8",
-                    "caikit-nlp-client",
-                    "urllib3"
+                    "git+https://github.com/neuralmagic/guidellm.git@8696139cabb4f14cdf548ec6b2aaca8894a131ed",
+                    "torch"
                 ]
             }
         }

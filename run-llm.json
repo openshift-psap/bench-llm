@@ -16,7 +16,7 @@
           "config": {
             "host": "hostname",
             "settings": {
-              "userenv": "fedora40",
+              "userenv": "fedora41",
               "osruntime": "podman",
               "podman-settings": {
                 "shm-size": "10.00gb"
@@ -66,135 +66,57 @@
           {
             "params": [
               {
-                "arg": "repo_tag",
+                "arg": "guidellm_target",
                 "vals": [
-                  "main"
+                  "localhost:8000"
                 ]
               },
               {
-                "arg": "config_output_format",
+                "arg": "guidellm_data",
                 "vals": [
-                  "json"
+                  "prompt_tokens=128,output_tokens=128,prompt_tokens_stdev=32,output_tokens_stdev=32"
                 ]
               },
               {
-                "arg": "config_output_dir",
+                "arg": "guidellm_backend",
                 "vals": [
-                  "./output/"
+                  "openapi_http"
                 ]
               },
               {
-                "arg": "config_output_file",
+                "arg": "guidellm_model",
                 "vals": [
-                  "output.json"
+                  "ibm-granite/granite-3.2-2b-instruct"
                 ]
               },
               {
-                "arg": "config_storage_type",
+                "arg": "guidellm_rate_type",
                 "vals": [
-                  "local"
+                  "sweep"
                 ]
               },
               {
-                "arg": "config_dataset_file",
+                "arg": "guidellm_max_seconds",
                 "vals": [
-                  "datasets/openorca_large_subset_011.jsonl"
+                  "30"
                 ]
               },
               {
-                "arg": "config_dataset_max_queries",
+                "arg": "guidellm_processor",
                 "vals": [
-                  "1000"
+                  "ibm-granite/granite-3.2-2b-instruct"
                 ]
               },
               {
-                "arg": "config_dataset_min_input_tokens",
-                "vals": [
-                  "0"
-                ]
-              },
-              {
-                "arg": "config_dataset_max_input_tokens",
-                "vals": [
-                  "1024"
-                ]
-              },
-              {
-                "arg": "config_dataset_min_output_tokens",
-                "vals": [
-                  "0"
-                ]
-              },
-              {
-                "arg": "config_dataset_max_output_tokens",
-                "vals": [
-                  "1024"
-                ]
-              },
-              {
-                "arg": "config_dataset_max_sequence_tokens",
+                "arg": "guidellm_max_concurrency",
                 "vals": [
                   "2048"
                 ]
               },
               {
-                "arg": "config_load_options_type",
+                "arg": "guidellm_request_timeout",
                 "vals": [
-                  "constant"
-                ]
-              },
-              {
-                "arg": "config_load_options_concurrency",
-                "vals": [
-                  "1"
-                ]
-              },
-              {
-                "arg": "config_load_options_duration",
-                "vals": [
-                  "20"
-                ]
-              },
-              {
-                "arg": "config_plugin",
-                "vals": [
-                  "openai_plugin"
-                ]
-              },
-              {
-                "arg": "config_plugin_options_use_tls",
-                "vals": [
-                  "False"
-                ]
-              },
-              {
-                "arg": "config_plugin_options_streaming",
-                "vals": [
-                  "True"
-                ]
-              },
-              {
-                "arg": "config_plugin_options_model_name",
-                "vals": [
-                  "flan-t5-small"
-                ]
-              },
-              {
-                "arg": "config_plugin_options_host",
-                "vals": [
-                  "http://route.to.host"
-                ]
-              },
-              {
-                "arg": "config_plugin_options_endpoint",
-                "vals": [
-                  "/v1/completions"
-                ]
-              },
-              {
-                "arg": "config_extra_metadata_replicas",
-                "vals": [
-                  "1"
+                  "300"
                 ]
               }
             ]

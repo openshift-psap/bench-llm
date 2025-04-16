@@ -4,48 +4,98 @@
         "generic_string": {
             "description": "all types of strings",
             "args": [
-                "repo_tag",
-                "config_output_format",
-                "config_output_dir",
-                "config_storage_type",
-                "config_dataset_file",
-                "config_load_options_type",
-                "config_plugin",
-                "config_plugin_options_model_name",
-                "config_plugin_options_host",
-                "config_plugin_options_endpoint"
+                "guidellm_target",
+                "guidellm_data",
+                "guidellm_backend_args",
+                "guidellm_model",
+                "guidellm_processor",
+                "guidellm_processor_args",
+                "guidellm_data_args",
+                "guidellm_rate",
+                "guidellm_env",
+                "guidellm_logging__console_log_level",
+                "guidellm_logging__log_file",
+                "guidellm_logging__log_file_level",
+                "guidellm_dataset__preferred_data_columns",
+                "guidellm_dataset__preferred_data_splits",
+                "guidellm_preferred_prompt_tokens_source",
+                "guidellm_preferred_output_tokens_source",
+                "guidellm_preferred_backend",
+                "guidellm_openai__api_key",
+                "guidellm_openai__bearer_token",
+                "guidellm_openai__organization",
+                "guidellm_openai__project",
+                "guidellm_openai__base_url",
+                "guidellm_openai__max_output_tokens",
+                "guidellm_report_generation__source",
+                "guidellm_report_generation__report_html_match",
+                "guidellm_report_generation__report_html_placeholder"
             ],
             "vals": ".+"
         },
         "integer_ge_zero": {
             "description": "a whole number >= 0",
             "args": [
-                "config_dataset_max_queries",
-                "config_dataset_min_input_tokens",
-                "config_dataset_max_input_tokens",
-                "config_dataset_min_output_tokens",
-                "config_dataset_max_output_tokens",
-                "config_dataset_max_sequence_tokens",
-                "config_load_options_concurrency",
-                "config_load_options_duration",
-                "config_extra_metadata_replicas"
+                "guidellm_max_seconds",
+                "guidellm_max_requests",
+                "guidellm_random_seed",
+                "guidellm_default_sweep_number",
+                "guidellm_request_timeout",
+                "guidellm_max_concurrency",
+                "guidellm_max_worker_processes",
+                "guidellm_max_add_requests_per_loop",
+                "guidellm_openai__max_output_tokens"
             ],
             "vals": "[0-9]+"
+        },
+        "float": {
+            "description": "floating point number with explicit decimal point",
+            "args": [
+                "guidellm_warmup_percent",
+                "guidellm_cooldown_percent",
+                "guidellm_default_async_loop_sleep"
+            ],
+            "vals": "[0-9]+\\.[0-9]+"
         },
         "boolean": {
             "description": "True or False",
             "args": [
-                "config_plugin_options_use_tls",
-                "config_plugin_options_streaming"
+                "guidellm_disable_progress",
+                "guidellm_disable_scheduler_stats",
+                "guidellm_enable_continuous_refresh",
+                "guidellm_logging__disabled",
+                "guidellm_logging__clear_loggers",
+                "guidellm_request_http2"
             ],
             "vals": "True|true|False|false"
         },
-        "string_no_template": {
-            "description": "Ensure the string does not contain a variable placeholder '{' or '}'",
+        "rate_type": {
+            "description": "Ensure the rate type is one of the valid options in guidellm.",
             "args": [
-                "config_output_file"
+                "guidellm_rate_type"
             ],
-            "vals": "^((?!{|}).)*$"
+            "vals": "sweep|synchronous|throughput|constant|poisson"
+        },
+        "output_path": {
+            "description": "The output path is provided as a parameter for completeness, but cannot be changed. This check is present in a few layers.",
+            "args": [
+                "guidellm_output_path"
+            ],
+            "vals": "output.json"
+        },
+        "valid_backends": {
+            "description": "Ensure the backend is one of the valid options.",
+            "args": [
+                "guidellm_backend_type"
+            ],
+            "vals": "openai_http"
+        },
+        "data_sampler": {
+            "description": "Ensure the data sampler is one of the valid options.",
+            "args": [
+                "guidellm_data_sampler"
+            ],
+            "vals": "random"
         }
     }
 }

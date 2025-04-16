@@ -8,7 +8,7 @@
       "controller-ip": "your-controller-ip",
       "host": "localhost",
       "user": "root",
-      "userenv": "fedora40",
+      "userenv": "fedora41",
       "unique-project": 1,
       "client": "1",
       "config": [
@@ -27,6 +27,9 @@
                   "IPC_LOCK"
                 ]
               }
+            },
+            "nodeSelector": {
+              "kubernetes.io/hostname": "<name of node to run guidellm on>"
             }
           }
         }
@@ -71,135 +74,57 @@
           {
             "params": [
               {
-                "arg": "repo_tag",
+                "arg": "guidellm_target",
                 "vals": [
-                  "main"
+                  "localhost:8000"
                 ]
               },
               {
-                "arg": "config_output_format",
+                "arg": "guidellm_data",
                 "vals": [
-                  "json"
+                  "prompt_tokens=128,output_tokens=128,prompt_tokens_stdev=32,output_tokens_stdev=32"
                 ]
               },
               {
-                "arg": "config_output_dir",
+                "arg": "guidellm_backend",
                 "vals": [
-                  "./output/"
+                  "openapi_http"
                 ]
               },
               {
-                "arg": "config_output_file",
+                "arg": "guidellm_model",
                 "vals": [
-                  "output.json"
+                  "ibm-granite/granite-3.2-2b-instruct"
                 ]
               },
               {
-                "arg": "config_storage_type",
+                "arg": "guidellm_rate_type",
                 "vals": [
-                  "local"
+                  "sweep"
                 ]
               },
               {
-                "arg": "config_dataset_file",
-                "vals": [
-                  "datasets/openorca_large_subset_011.jsonl"
-                ]
-              },
-              {
-                "arg": "config_dataset_max_queries",
-                "vals": [
-                  "1000"
-                ]
-              },
-              {
-                "arg": "config_dataset_min_input_tokens",
-                "vals": [
-                  "0"
-                ]
-              },
-              {
-                "arg": "config_dataset_max_input_tokens",
-                "vals": [
-                  "1024"
-                ]
-              },
-              {
-                "arg": "config_dataset_min_output_tokens",
-                "vals": [
-                  "0"
-                ]
-              },
-              {
-                "arg": "config_dataset_max_output_tokens",
-                "vals": [
-                  "1024"
-                ]
-              },
-              {
-                "arg": "config_dataset_max_sequence_tokens",
-                "vals": [
-                  "2048"
-                ]
-              },
-              {
-                "arg": "config_load_options_type",
-                "vals": [
-                  "constant"
-                ]
-              },
-              {
-                "arg": "config_load_options_concurrency",
-                "vals": [
-                  "1"
-                ]
-              },
-              {
-                "arg": "config_load_options_duration",
+                "arg": "guidellm_max_seconds",
                 "vals": [
                   "30"
                 ]
               },
               {
-                "arg": "config_plugin",
+                "arg": "guidellm_processor",
                 "vals": [
-                  "openai_plugin"
+                  "ibm-granite/granite-3.2-2b-instruct"
                 ]
               },
               {
-                "arg": "config_plugin_options_use_tls",
+                "arg": "guidellm_max_concurrency",
                 "vals": [
-                  "False"
+                  "2048"
                 ]
               },
               {
-                "arg": "config_plugin_options_streaming",
+                "arg": "guidellm_request_timeout",
                 "vals": [
-                  "True"
-                ]
-              },
-              {
-                "arg": "config_plugin_options_model_name",
-                "vals": [
-                  "/mnt/models/"
-                ]
-              },
-              {
-                "arg": "config_plugin_options_host",
-                "vals": [
-                  "https://model-endpoint.example"
-                ]
-              },
-              {
-                "arg": "config_plugin_options_endpoint",
-                "vals": [
-                  "/v1/completions"
-                ]
-              },
-              {
-                "arg": "config_extra_metadata_replicas",
-                "vals": [
-                  "1"
+                  "300"
                 ]
               }
             ]
