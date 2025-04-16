@@ -180,7 +180,6 @@ def parse_phase(results: Dict[str, Any], phase: Phase, period: Period):
         ("tokens_per_second", MetricClass.THROUGHPUT),
     ]
     run_stats_classes = [
-        ("requests_made", MetricClass.COUNT),
         ("worker_start_delay_avg", MetricClass.COUNT),
         ("worker_start_time_targeted_delay_avg", MetricClass.COUNT),
         ("worker_time_avg", MetricClass.COUNT),
@@ -273,7 +272,7 @@ def main():
 
     post_process_config = PostProcess(
         periods[0].name,
-        "",
+        safe_name("profile_type"),
         "llm",
         periods,
         '2021.04.12',
