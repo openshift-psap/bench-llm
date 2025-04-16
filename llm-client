@@ -95,8 +95,8 @@ class Params:
     guidellm_max_concurrency: int = 512
     guidellm_max_worker_processes: int = 10
     guidellm_max_add_requests_per_loop: int = 20
-    guidellm_dataset__preferred_data_columns: str = "prompt,instruction,input,inputs,question,context,text,content,body,data"
-    guidellm_dataset__preferred_data_splits: str = "test,tst,validation,val,train"
+    guidellm_dataset__preferred_data_columns: str = None
+    guidellm_dataset__preferred_data_splits: str = None
     guidellm_preferred_prompt_tokens_source: str = None
     guidellm_preferred_output_tokens_source: str = None
     guidellm_preferred_backend: str = "openai"
@@ -104,11 +104,11 @@ class Params:
     guidellm_openai__bearer_token: str = None
     guidellm_openai__organization: str = None
     guidellm_openai__project: str = None
-    guidellm_openai__base_url: str = "http://localhost:8000"
-    guidellm_openai__max_output_tokens: int = 16384
-    guidellm_report_generation__source: str = ""
-    guidellm_report_generation__report_html_match: str = "window.report_data = {};"
-    guidellm_report_generation__report_html_placeholder: str = "{}"
+    guidellm_openai__base_url: str = None
+    guidellm_openai__max_output_tokens: int = None
+    guidellm_report_generation__source: str = None
+    guidellm_report_generation__report_html_match: str = None
+    guidellm_report_generation__report_html_placeholder: str = None
 
 ENV_PARAMS = [
     "guidellm_env",
@@ -178,7 +178,8 @@ def main():
     env_args = []
     for param in ENV_PARAMS:
         value = asdict(params)[param]
-        env_args.append(f"{param.replace("guidellm_", "guidellm__").upper()}=\"{value}\"")
+        if value is not None:
+            env_args.append(f"{param.replace("guidellm_", "guidellm__").upper()}=\"{value}\"")
 
     # Convert the "guidellm_*" fields of the Params struct to cli args for guidellm
     cli_args = []
