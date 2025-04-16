@@ -205,7 +205,7 @@ def parse_phase(results: Dict[str, Any], phase: Phase, period: Period):
             value = arg[2](args)
             if value is None:
                 continue
-            metrics.append(Metric(next_free_metric_idx, Desc(arg[1], "guidellm", safe_name(arg[0])), {}))
+            metrics.append(Metric(next_free_metric_idx, Desc(arg[1], "llm", safe_name(arg[0])), {}))
             pairs.append((arg[0], float(value)))
         except:
             continue
@@ -217,7 +217,7 @@ def parse_phase(results: Dict[str, Any], phase: Phase, period: Period):
         for name, value in metric_values:
             if value is None:
                 continue
-            metrics.append(Metric(next_free_metric_idx, Desc(kpi[1], "guidellm", safe_name(name)), {}))
+            metrics.append(Metric(next_free_metric_idx, Desc(kpi[1], "llm", safe_name(name)), {}))
             idx_map[name] = next_free_metric_idx
             pairs.append((name, float(value)))
             next_free_metric_idx += 1
@@ -227,7 +227,7 @@ def parse_phase(results: Dict[str, Any], phase: Phase, period: Period):
         for name, value in metric_values:
             if value is None:
                 continue
-            metrics.append(Metric(next_free_metric_idx, Desc(run_stat[1], "guidellm", safe_name(name)), {}))
+            metrics.append(Metric(next_free_metric_idx, Desc(run_stat[1], "llm", safe_name(name)), {}))
             idx_map[name] = next_free_metric_idx
             pairs.append((name, float(value)))
             next_free_metric_idx += 1

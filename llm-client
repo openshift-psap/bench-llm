@@ -178,7 +178,7 @@ def main():
     env_args = []
     for param in ENV_PARAMS:
         value = asdict(params)[param]
-        env_args.append(f"{param.replace("guidellm_", "guidellm__").upper()}={value}")
+        env_args.append(f"{param.replace("guidellm_", "guidellm__").upper()}=\"{value}\"")
 
     # Convert the "guidellm_*" fields of the Params struct to cli args for guidellm
     cli_args = []
