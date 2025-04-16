@@ -183,7 +183,7 @@ def main():
     # Convert the "guidellm_*" fields of the Params struct to cli args for guidellm
     cli_args = []
     for field, value in asdict(params).items():
-        if "guidellm" in field and value is not None and field not in env_params:
+        if "guidellm" in field and value is not None and field not in ENV_PARAMS:
             if type(value) is bool:
                 if value:
                     cli_args.append(f"--{field.replace("guidellm_", "").replace("_", "-")}")
