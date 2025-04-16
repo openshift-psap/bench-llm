@@ -6,8 +6,30 @@
             "args": [
                 "guidellm_target",
                 "guidellm_data",
+                "guidellm_backend_args",
                 "guidellm_model",
-                "guidellm_tokenizer"
+                "guidellm_processor",
+                "guidellm_processor_args",
+                "guidellm_data_args",
+                "guidellm_rate",
+                "guidellm_env",
+                "guidellm_logging__console_log_level",
+                "guidellm_logging__log_file",
+                "guidellm_logging__log_file_level",
+                "guidellm_dataset__preferred_data_columns",
+                "guidellm_dataset__preferred_data_splits",
+                "guidellm_preferred_prompt_tokens_source",
+                "guidellm_preferred_output_tokens_source",
+                "guidellm_preferred_backend",
+                "guidellm_openai__api_key",
+                "guidellm_openai__bearer_token",
+                "guidellm_openai__organization",
+                "guidellm_openai__project",
+                "guidellm_openai__base_url",
+                "guidellm_openai__max_output_tokens",
+                "guidellm_report_generation__source",
+                "guidellm_report_generation__report_html_match",
+                "guidellm_report_generation__report_html_placeholder"
             ],
             "vals": ".+"
         },
@@ -16,24 +38,36 @@
             "args": [
                 "guidellm_max_seconds",
                 "guidellm_max_requests",
+                "guidellm_random_seed",
+                "guidellm_default_sweep_number",
+                "guidellm_request_timeout",
                 "guidellm_max_concurrency",
-                "guidellm_request_timeout"
+                "guidellm_max_worker_processes",
+                "guidellm_max_add_requests_per_loop",
+                "guidellm_openai__max_output_tokens"
             ],
             "vals": "[0-9]+"
+        },
+        "float": {
+            "description": "floating point number with explicit decimal point",
+            "args": [
+                "guidellm_warmup_percent",
+                "guidellm_cooldown_percent",
+                "guidellm_default_async_loop_sleep"
+            ],
+            "vals": "[0-9]+\\.[0-9]+"
         },
         "boolean": {
             "description": "True or False",
             "args": [
-                "guidellm_enable_continuous_refresh"
+                "guidellm_disable_progress",
+                "guidellm_disable_scheduler_stats",
+                "guidellm_enable_continuous_refresh",
+                "guidellm_logging__disabled",
+                "guidellm_logging__clear_loggers",
+                "guidellm_request_http2"
             ],
             "vals": "True|true|False|false"
-        },
-        "data_type": {
-            "description": "Ensure the data type is one of the valid options in guidellm.",
-            "args": [
-                "guidellm_data_type"
-            ],
-            "vals": "emulated|file|transformers"
         },
         "rate_type": {
             "description": "Ensure the rate type is one of the valid options in guidellm.",
@@ -41,13 +75,6 @@
                 "guidellm_rate_type"
             ],
             "vals": "sweep|synchronous|throughput|constant|poisson"
-        },
-        "list_of_floats": {
-            "description": "Comma separated list of floating point numbers.",
-            "args": [
-                "guidellm_rate"
-            ],
-            "vals": "(([0-9]+(\\.[0-9])?),)*([0-9]+(\\.[0-9]+)?)"
         },
         "output_path": {
             "description": "The output path is provided as a parameter for completeness, but cannot be changed. This check is present in a few layers.",
@@ -59,9 +86,16 @@
         "valid_backends": {
             "description": "Ensure the backend is one of the valid options.",
             "args": [
-                "guidellm_backend"
+                "guidellm_backend_type"
             ],
             "vals": "openai_http"
+        },
+        "data_sampler": {
+            "description": "Ensure the data sampler is one of the valid options.",
+            "args": [
+                "guidellm_data_sampler"
+            ],
+            "vals": "random"
         }
     }
 }

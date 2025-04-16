@@ -82,13 +82,7 @@
               {
                 "arg": "guidellm_data",
                 "vals": [
-                  "prompt_tokens=128,prompt_tokens_variance=32,generated_tokens=128,generated_tokens_variance=32"
-                ]
-              },
-              {
-                "arg": "guidellm_data_type",
-                "vals": [
-                  "emulated"
+                  "prompt_tokens=128,output_tokens=128,prompt_tokens_stdev=32,output_tokens_stdev=32"
                 ]
               },
               {
@@ -100,7 +94,7 @@
               {
                 "arg": "guidellm_model",
                 "vals": [
-                  "ibm-granite/granite-3.1-2b-instruct"
+                  "ibm-granite/granite-3.2-2b-instruct"
                 ]
               },
               {
@@ -112,13 +106,13 @@
               {
                 "arg": "guidellm_max_seconds",
                 "vals": [
-                  "120"
+                  "30"
                 ]
               },
               {
-                "arg": "guidellm_tokenizer",
+                "arg": "guidellm_processor",
                 "vals": [
-                  "ibm-granite/granite-3.1-8b-instruct"
+                  "ibm-granite/granite-3.2-2b-instruct"
                 ]
               },
               {
