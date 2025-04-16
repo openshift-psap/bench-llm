@@ -17,21 +17,13 @@ def to_dict(a: Any):
     else:
         raise TypeError(f"Cannot bring {a} to a dict")
 
-def json_lookup(d: Dict[Any, Any], path: str, delim: str=".") -> Optional[Any]:
+def lookup(d: Dict[Any, Any], path: str, delim: str=".") -> Optional[Any]:
     try:
         segments = path.split(delim)
         return reduce(lambda td, seg: td[seg], segments, d)
     except KeyError:
         return None
 
-def parse_percentiles(d: Dict[Any, Any], path: str, name_prefix=None) -> Optional[List[Tuple[str, float]]]:
-    if name_prefix is None:
-        name_prefix = path + "_"
-    percentiles_list = json_lookup(d, path)
-    if percentiles_list is None:
-        return None
-    else:
-        return [(name_prefix + k, v) for k, v in d.items()]
 
 """
 The following enums and dataclasses are datastructures
@@ -116,106 +108,143 @@ class Entry:
 Helpers specific to guidellm and bench-llm
 """
 
+@dataclass
 class Phase():
+    """
+    An execution of a guidellm strategy. A rate-type of `sweep` will result in multiple
+    runs, each using a different strategy. A constant/poisson/etc rate-type is a degenerate
+    form of this sweep where there is only one run, using one strategy.
+    There is a one-to-one correspondence between `Phase`'s and CDM `Period`'s. Each `Phase`
+    will be given its own CDM `Period`.
+    """
     name: str
-    metric_data: str # "metric-data-[0-9]+"
-    metrics: Dict[str, Any]
+    idx: int # "metric-data-[0-9]+"
 
-    def __init__(self, name, metric_data, metrics):
-        self.name = name
-        self.metric_data = metric_data
-        self.metrics = metrics
+def flatten_dict(d: Any, sep="_", prefix="") -> List[Tuple[str, float]]:
+    pairs = []
+    if type(d) is float:
+        pairs.append((prefix, d))
+    elif type(d) is dict:
+        for k, v in d.items():
+            pairs.extend(flatten_dict(v, sep=sep, prefix=(prefix + sep + k)))
 
-    def process(self):
-        csv_path = self.metric_data + ".csv"
-        json_path = self.metric_data + ".json"
+    return pairs
 
-        # we have timestamp in seconds, need ms
-        start_time = int(float(0 if self.metrics["start_time"] is None else self.metrics["start_time"])) * 1000
-        end_time = int(float(0 if self.metrics["end_time"] is None else self.metrics["end_time"])) * 1000
 
-        locations = [
-            ("request_count", MetricClass.COUNT),
-            ("error_count", MetricClass.COUNT),
-            ("total_count", MetricClass.COUNT),
-            ("duration", MetricClass.COUNT),
-            ("completed_request_rate", MetricClass.THROUGHPUT),
-            ("request_latency", MetricClass.COUNT),
-            ("request_latency_percentiles", MetricClass.COUNT),
-            ("time_to_first_token", MetricClass.COUNT),
-            ("time_to_first_token_percentiles", MetricClass.COUNT),
-            ("inter_token_latency", MetricClass.COUNT),
-            ("inter_token_latency_percentiles", MetricClass.COUNT),
-            ("output_token_throughput", MetricClass.THROUGHPUT),
-            ("prompt_token", MetricClass.COUNT),
-            ("prompt_token_percentiles", MetricClass.COUNT),
-            ("output_token", MetricClass.COUNT),
-            ("output_token_percentiles", MetricClass.COUNT),
-        ]
+def safe_name(name: str) -> str:
+    return name.lower().replace("_", "-")
 
-        percentiles = ["50", "90", "95", "99"]
+PROFILE_TYPE_MAP = {
+    "sweep": 0.0,
+    "async": 1.0,
+}
 
-        metrics: List[Metric] = []
-        metric_idx = 0
-        metric_idx_map = {}
-        for location in locations:
-            if "_percentiles" in location[0]:
-                for percentile in percentiles:
-                    metric_name = self.safe_name(location[0].replace("_percentiles", f"_p{percentile}"))
-                    metric = Metric(metric_idx, Desc(location[1], "llm", metric_name), {})
-                    metric_idx_map[metric_name] = metric_idx
-                    metrics.append(metric)
-                    metric_idx += 1
-            else:
-                metric_name = self.safe_name(location[0])
-                metric = Metric(metric_idx, Desc(location[1], "llm", metric_name), {})
-                metric_idx_map[metric_name] = metric_idx
-                metrics.append(metric)
-                metric_idx += 1
+STRATEGY_TYPE_MAP = {
+    "synchronous": 0.0,
+    "throughput": 1.0,
+    "constant": 2.0,
+}
 
-        with open(json_path, "w") as f:
-            f.write(json.dumps([to_dict(metric) for metric in metrics]))
+def parse_phase(results: Dict[str, Any], phase: Phase, period: Period):
+    benchmark = results["benchmarks"][phase.idx]
+    args = benchmark["args"]
+    data = benchmark["metrics"]
+    run_stats = benchmark["run_stats"]
 
-        entries: List[Entry] = []
-        for location in locations:
-            if "_percentiles" in location[0]:
-                for percentile in percentiles:
-                    metric_name = self.safe_name(location[0].replace("_percentiles", f"_p{percentile}"))
-                    idx = metric_idx_map[metric_name]
-                    string_value = json_lookup(self.metrics, location[0] + "." + percentile)
-                    if string_value is None:
-                        print(f"WARNING: no field {location[0]}.{percentile} in guidellm output")
-                        continue
-                    float_value = 0.0
-                    try:
-                        float_value = float(string_value)
-                    except ValueError:
-                        print(f"WARNING: cannot convert {metric_name}={string_value} to float")
-                        continue
-                    entry = Entry(idx, start_time, end_time, float(float_value))
-                    entries.append(entry)
-            else:
-                metric_name = self.safe_name(location[0])
-                idx = metric_idx_map[metric_name]
-                string_value = json_lookup(self.metrics, location[0])
-                if string_value is None:
-                    print(f"WARNING: no field {location[0]} in guidellm output")
-                    continue
-                float_value = 0.0
-                try:
-                    float_value = float(string_value)
-                except ValueError:
-                    print(f"WARNING: cannot convert {location[0]}={string_value} to float")
-                    continue
-                entry = Entry(idx, start_time, end_time, float(float_value))
-                entries.append(entry)
+    json_path = period.metric_files[0] + ".json"
+    csv_path = period.metric_files[0] + ".csv"
 
-        with open(csv_path, "w") as f:
-            f.write("\n".join([str(entry) for entry in entries]))
+    # Guidellm gives floating point seconds, we need integer millis
+    start_time = int(float(benchmark["start_time"])) * 1000
+    end_time = int(float(benchmark["end_time"])) * 1000
 
-    def safe_name(self, name: str) -> str:
-        return name.replace("_", "-")
+    # All the metrics we are going to try to look for. Each of these might resolve to multiple
+    # metrics with different suffixes.
+    args_classes = [
+        ("target_rps", MetricClass.THROUGHPUT, lambda x: x["strategy"]["rate"]),
+        ("measured_rps", MetricClass.THROUGHPUT, lambda x: x["profile"]["measured_rates"][int(x["strategy_index"])]),
+        ("measured_concurrency", MetricClass.COUNT, lambda x: x["profile"]["measured_concurrencies"][int(x["strategy_index"])]),
+        ("profile_type", MetricClass.COUNT, lambda x: PROFILE_TYPE_MAP[x["profile"]["type_"]]),
+        ("strategy_type", MetricClass.COUNT, lambda x: STRATEGY_TYPE_MAP[x["strategy"]["type_"]]),
+    ]
+    kpi_classes = [
+        ("inter_token_latency_ms", MetricClass.COUNT),
+        ("output_token_count", MetricClass.COUNT),
+        ("output_tokens_per_second", MetricClass.THROUGHPUT),
+        ("prompt_token_count", MetricClass.COUNT),
+        ("request_concurrency", MetricClass.COUNT),
+        ("request_latency", MetricClass.COUNT),
+        ("requests_per_second", MetricClass.THROUGHPUT),
+        ("time_per_output_token_ms", MetricClass.COUNT),
+        ("time_to_first_token_ms", MetricClass.COUNT),
+        ("tokens_per_second", MetricClass.THROUGHPUT),
+    ]
+    run_stats_classes = [
+        ("requests_made", MetricClass.COUNT),
+        ("worker_start_delay_avg", MetricClass.COUNT),
+        ("worker_start_time_targeted_delay_avg", MetricClass.COUNT),
+        ("worker_time_avg", MetricClass.COUNT),
+        ("request_start_time_delay_avg", MetricClass.COUNT),
+        ("request_start_time_targeted_delay_avg", MetricClass.COUNT),
+        ("request_time_avg", MetricClass.COUNT),
+        ("request_time_delay_avg", MetricClass.COUNT),
+        ("requests_made", MetricClass.COUNT),
+        ("scheduled_time_delay_avg", MetricClass.COUNT),
+        ("scheduled_time_sleep_avg", MetricClass.COUNT),
+        ("queued_time_avg", MetricClass.COUNT),
+    ]
 
+    # Build metrics list
+    metrics: List[Metric] = []
+    pairs = []
+    idx_map = {}
+    next_free_metric_idx = 0
+
+    for arg in args_classes:
+        try:
+            idx_map[arg[0]] = next_free_metric_idx
+            value = arg[2](args)
+            if value is None:
+                continue
+            metrics.append(Metric(next_free_metric_idx, Desc(arg[1], "guidellm", safe_name(arg[0])), {}))
+            pairs.append((arg[0], float(value)))
+        except:
+            continue
+        finally:
+            next_free_metric_idx += 1
+
+    for kpi in kpi_classes:
+        metric_values = flatten_dict(data[kpi[0]], prefix=kpi[0])
+        for name, value in metric_values:
+            if value is None:
+                continue
+            metrics.append(Metric(next_free_metric_idx, Desc(kpi[1], "guidellm", safe_name(name)), {}))
+            idx_map[name] = next_free_metric_idx
+            pairs.append((name, float(value)))
+            next_free_metric_idx += 1
+
+    for run_stat in run_stats_classes:
+        metric_values = flatten_dict(run_stats[run_stat[0]], prefix=run_stat[0])
+        for name, value in metric_values:
+            if value is None:
+                continue
+            metrics.append(Metric(next_free_metric_idx, Desc(run_stat[1], "guidellm", safe_name(name)), {}))
+            idx_map[name] = next_free_metric_idx
+            pairs.append((name, float(value)))
+            next_free_metric_idx += 1
+
+    with open(json_path, "w") as f:
+        f.write(json.dumps([to_dict(metric) for metric in metrics], indent=4))
+
+    # Build entry list
+    entries: List[Entry] = []
+    for pair in pairs:
+        entries.append(Entry(idx_map[pair[0]], start_time, end_time, pair[1]))
+
+    with open(csv_path, "w") as f:
+        f.write("\n".join([str(entry) for entry in entries]))
+
+    return next_free_metric_idx
 
 def main():
 
@@ -236,35 +265,23 @@ def main():
     # 1. Generate the 'post-process-data.json` file which describes where to find
     #   our processed data and includes some metadata
 
-    periods: List[Period] = []
-    phases: List[Phase] = []
-    disambiguate_async = len([phase["mode"] for phase in output["benchmarks"][0]["benchmarks"] if phase["mode"] == "asynchronous"]) > 1
-    async_idx = 0
-    for n, phase in enumerate(output["benchmarks"][0]["benchmarks"]):
-        phase_name = ""
-        if disambiguate_async and phase["mode"] == "asynchronous":
-            phase_name = f"phase-{phase["mode"]}-s{async_idx}"
-            async_idx += 1
-        else:
-            phase_name = f"phase-{phase["mode"]}"
+    periods: List[Period] = [Period(f"p{i}", [f"metric-data-{i}"]) for i in range(len(output["benchmarks"]))]
+    phases: List[Phase] = [Phase(f"p{i}", i) for i in range(len(output["benchmarks"]))]
 
-        periods.append(Period(phase_name, [f"metric-data-{n}"]))
-        phases.append(Phase(phase_name, f"metric-data-{n}", phase))
-
+    for phase, period in zip(phases, periods):
+        parse_phase(output, phase, period)
 
     post_process_config = PostProcess(
         periods[0].name,
-        "request-count",
+        "",
         "llm",
         periods,
         '2021.04.12',
     )
 
     with open("post-process-data.json", "w") as f:
-        f.write(json.dumps(to_dict(post_process_config)))
+        f.write(json.dumps(to_dict(post_process_config), indent=4))
 
-    for phase in phases:
-        phase.process()
 
     return 0
 
