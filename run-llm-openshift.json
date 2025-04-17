@@ -86,9 +86,9 @@
                 ]
               },
               {
-                "arg": "guidellm_backend",
+                "arg": "guidellm_backend_type",
                 "vals": [
-                  "openapi_http"
+                  "openai_http"
                 ]
               },
               {
