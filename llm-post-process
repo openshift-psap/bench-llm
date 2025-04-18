@@ -135,14 +135,21 @@ def safe_name(name: str) -> str:
     return name.lower().replace("_", "-")
 
 PROFILE_TYPE_MAP = {
-    "sweep": 0.0,
-    "async": 1.0,
+    "async": 0.0,
+    "sweep": 1.0,
+    "concurrent": 2.0,
+    "throughput": 3.0,
+    "synchronous": 4.0,
+    "profile": 5.0,
 }
 
 STRATEGY_TYPE_MAP = {
-    "synchronous": 0.0,
-    "throughput": 1.0,
-    "constant": 2.0,
+    "concurrent": 0.0,
+    "strategy": 1.0,
+    "throughput": 2.0,
+    "synchronous": 3.0,
+    "poisson": 4.0,
+    "constant": 5.0,
 }
 
 def parse_phase(results: Dict[str, Any], phase: Phase, period: Period):
@@ -207,7 +214,8 @@ def parse_phase(results: Dict[str, Any], phase: Phase, period: Period):
                 continue
             metrics.append(Metric(next_free_metric_idx, Desc(arg[1], "llm", safe_name(arg[0])), {}))
             pairs.append((arg[0], float(value)))
-        except:
+        except Exception as e:
+            print(f"WARNING: Can't parse arg {e}")
             continue
         finally:
             next_free_metric_idx += 1
@@ -272,7 +280,7 @@ def main():
 
     post_process_config = PostProcess(
         periods[0].name,
-        safe_name("profile_type"),
+        safe_name("measured_rps"),
         "llm",
         periods,
         '2021.04.12',
