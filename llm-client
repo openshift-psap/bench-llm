@@ -10,10 +10,11 @@ sys.stderr = fp_err
 
 import argparse
 import subprocess
-from typing import List, Literal, Optional, TypeAlias, Union, get_origin, get_args
+from typing import Optional, Union, get_origin, get_args
 from dataclasses import asdict, dataclass, fields, MISSING
 from enum import Enum
 import json
+import os
 
 DEPENDENCIES = ["guidellm"]
 
@@ -23,8 +24,6 @@ def is_optional(field_t):
 @dataclass
 class CmdResult:
     rc: int
-    stdout: Optional[str]
-    stderr: Optional[str]
 
 class DataType(Enum):
     EMULATED = "emulated"
@@ -140,16 +139,11 @@ ENV_PARAMS = [
     "guidellm_report_generation__report_html_placeholder",
 ]
 
-def run(cmd: str, ignore_output=False, out_file=fp_out, err_file=fp_err) -> CmdResult:
-    ran = subprocess.run(cmd, shell=True, stdout=(subprocess.DEVNULL if ignore_output else subprocess.PIPE), stderr=(subprocess.DEVNULL if ignore_output else subprocess.PIPE))
+def run(cmd: str, ignore_output=False, out_file=fp_out, err_file=fp_err, env={}) -> CmdResult:
+    ran = subprocess.run(cmd, shell=True, stdout=(subprocess.DEVNULL if ignore_output else out_file), stderr=(subprocess.DEVNULL if ignore_output else err_file), env={**os.environ, **env})
     result = CmdResult(
-        ran.returncode,
-        None if ignore_output else ran.stdout.decode("utf-8"),
-        None if ignore_output else ran.stderr.decode("utf-8"),
+        ran.returncode
     )
-    if not ignore_output:
-        out_file.write(str(result.stdout))
-        err_file.write(str(result.stderr))
     return result
 
 def main():
@@ -159,7 +153,6 @@ def main():
         ret = run(f"which {name}")
         if ret.rc != 0:
             print(f"Missing dependency: {name}")
-            print(f"\t{ret.stderr}")
             return 1
 
     parser = argparse.ArgumentParser()
@@ -193,8 +186,12 @@ def main():
 
     # Run guidellm, save results to output.json
     guidellm_cmd = " ".join(env_args) + " guidellm benchmark " + " ".join(cli_args)
+    hf_token = "token"
+    with open("/root/hf_token", "r") as f:
+        hf_token = f.read()
     print(f"Running: {guidellm_cmd}")
-    run(guidellm_cmd)
+    run(guidellm_cmd, env={"hf_token": hf_token})
+    run("rm -f /root/hf_token")
 
     # Save all settings
     with open("params.json", "w") as f:

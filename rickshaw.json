@@ -25,6 +25,10 @@
       {
         "src": "%bench-dir%/llm-client",
         "dest": "/usr/bin/"
+      },
+      {
+        "src": "/root/hf_token",
+        "dest": "/root/hf_token"
       }
     ],
     "start": "llm-client",
