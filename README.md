@@ -13,6 +13,7 @@ All options from the guidellm config file are present in run-llm.json prefixed b
 OpenShift SUT, you need the kubeconfig file, or SSH access to a host that has the kubeconfig file.
 2. Access to a Crucible controller that has `bench-llm` installed.
 3. A model endpoint accessible to your SUT. For most cases this model is running on your SUT.
+4. A HuggingFace token in a file `/root/hf_token` on the controller. This is necessary to access a model's tokenizer.
 
 ### Launching The Benchmark
 

@@ -10,10 +10,11 @@ sys.stderr = fp_err
 
 import argparse
 import subprocess
-from typing import List, Literal, Optional, TypeAlias, Union, get_origin, get_args
+from typing import Optional, Union, get_origin, get_args
 from dataclasses import asdict, dataclass, fields, MISSING
 from enum import Enum
 import json
+import os
 
 DEPENDENCIES = ["guidellm"]
 
@@ -194,7 +195,11 @@ def main():
     # Run guidellm, save results to output.json
     guidellm_cmd = " ".join(env_args) + " guidellm benchmark " + " ".join(cli_args)
     print(f"Running: {guidellm_cmd}")
+    with open("/root/hf_token", "r") as f:
+        hf_token = f.read()
+        os.environ["HF_TOKEN"] = hf_token.strip()
     run(guidellm_cmd)
+    del os.environ["HF_TOKEN"]
 
     # Save all settings
     with open("params.json", "w") as f:
