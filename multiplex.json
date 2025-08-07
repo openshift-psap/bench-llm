@@ -74,7 +74,7 @@
             "args": [
                 "guidellm_rate_type"
             ],
-            "vals": "sweep|synchronous|throughput|constant|poisson"
+            "vals": "sweep|synchronous|throughput|constant|poisson|concurrent"
         },
         "output_path": {
             "description": "The output path is provided as a parameter for completeness, but cannot be changed. This check is present in a few layers.",
