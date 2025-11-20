@@ -62,6 +62,7 @@ class DataSampler(Enum):
 class Params:
     guidellm_target: str
     guidellm_data: str
+    guidellm_request_type: str # can be one of text_completion or chat_completion or audio_transcription or audio_translation
     guidellm_rate_type: RateType
     guidellm_backend_type: BackendEngine = BackendEngine.OPENAI_HTTP
     guidellm_backend_args: str = None

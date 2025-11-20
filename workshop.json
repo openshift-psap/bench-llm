@@ -29,7 +29,7 @@
             "type": "python3",
             "python3_info": {
                 "packages": [
-                    "guidellm==0.3.0",
+                    "guidellm[recommended]==0.4.0",
                     "torch"
                 ]
             }
