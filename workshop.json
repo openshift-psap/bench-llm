@@ -29,7 +29,7 @@
             "type": "python3",
             "python3_info": {
                 "packages": [
-                    "git+https://github.com/neuralmagic/guidellm.git@91083695fbbc2fa95d81d95be3b6f5de415d9557",
+                    "guidellm[recommended]==0.4.0",
                     "torch"
                 ]
             }
