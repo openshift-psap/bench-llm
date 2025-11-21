@@ -8,6 +8,7 @@
                 "guidellm_data",
                 "guidellm_backend_args",
                 "guidellm_model",
+                "guidellm_request_type",
                 "guidellm_processor",
                 "guidellm_processor_args",
                 "guidellm_data_args",
