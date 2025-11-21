@@ -152,11 +152,67 @@ STRATEGY_TYPE_MAP = {
     "constant": 5.0,
 }
 
+def safe_get(d, *path):
+    """Safely get nested dictionary values."""
+    for p in path:
+        if not isinstance(d, dict) or p not in d:
+            return None
+        d = d[p]
+    return d
+
+def safe_measured_rate(args):
+    """Safely get measured rate from profile or calculate from metrics."""
+    profile = args.get("profile", {})
+    idx = int(args.get("strategy_index", 0))
+    # Check if measured_rates exists and is a list (old format)
+    if "measured_rates" in profile and isinstance(profile["measured_rates"], list):
+        rates = profile["measured_rates"]
+        return rates[idx] if idx < len(rates) else None
+    # New format: rate is in args.rate as a list
+    if "rate" in args and isinstance(args["rate"], list):
+        rates = args["rate"]
+        return rates[idx] if idx < len(rates) else None
+    return None
+
+def safe_measured_concurrency(args):
+    """Safely get measured concurrency from profile or strategy."""
+    profile = args.get("profile", {})
+    strategy = args.get("strategy", {})
+    idx = int(args.get("strategy_index", 0))
+    # Check if measured_concurrencies exists and is a list (old format)
+    if "measured_concurrencies" in profile and isinstance(profile["measured_concurrencies"], list):
+        conc = profile["measured_concurrencies"]
+        return conc[idx] if idx < len(conc) else None
+    # New format: max_concurrency is in strategy
+    if "max_concurrency" in strategy:
+        return strategy["max_concurrency"]
+    return None
+
 def parse_phase(results: Dict[str, Any], phase: Phase, period: Period):
     benchmark = results["benchmarks"][phase.idx]
-    args = benchmark["args"]
-    data = benchmark["metrics"]
-    run_stats = benchmark["run_stats"]
+
+    # Args are now at top level, but we also need config info from benchmark
+    top_level_args = results.get("args", {})
+    config = benchmark.get("config", {})
+
+    # Merge top-level args with config info for backward compatibility
+    # Config has strategy and profile nested, so we need to extract them
+    args = top_level_args.copy()
+    if config:
+        # Add strategy info from config
+        if "strategy" in config:
+            args["strategy"] = config["strategy"]
+        # Add profile info from config
+        if "profile" in config:
+            args["profile"] = config["profile"]
+            # For strategy_index, use run_index from config
+            args["strategy_index"] = config.get("run_index", 0)
+
+    # Metrics are now a flat dict directly in benchmark["metrics"]
+    data = benchmark.get("metrics", {})
+
+    # Scheduler metrics (replaces run_stats)
+    scheduler_metrics = benchmark.get("scheduler_metrics", {})
 
     json_path = period.metric_files[0] + ".json"
     csv_path = period.metric_files[0] + ".csv"
@@ -168,11 +224,11 @@ def parse_phase(results: Dict[str, Any], phase: Phase, period: Period):
     # All the metrics we are going to try to look for. Each of these might resolve to multiple
     # metrics with different suffixes.
     args_classes = [
-        ("target_rps", MetricClass.THROUGHPUT, lambda x: x["strategy"]["rate"]),
-        ("measured_rps", MetricClass.THROUGHPUT, lambda x: x["profile"]["measured_rates"][int(x["strategy_index"])]),
-        ("measured_concurrency", MetricClass.COUNT, lambda x: x["profile"]["measured_concurrencies"][int(x["strategy_index"])]),
-        ("profile_type", MetricClass.COUNT, lambda x: PROFILE_TYPE_MAP[x["profile"]["type_"]]),
-        ("strategy_type", MetricClass.COUNT, lambda x: STRATEGY_TYPE_MAP[x["strategy"]["type_"]]),
+        ("target_rps", MetricClass.THROUGHPUT, lambda x: (x.get("rate", [None])[0] if isinstance(x.get("rate"), list) and len(x.get("rate", [])) > 0 else safe_get(x, "strategy", "rate"))),
+        ("measured_rps", MetricClass.THROUGHPUT, lambda x: safe_measured_rate(x)),
+        ("measured_concurrency", MetricClass.COUNT, lambda x: safe_measured_concurrency(x)),
+        ("profile_type", MetricClass.COUNT, lambda x: PROFILE_TYPE_MAP.get(safe_get(x, "profile", "type_"), None) if safe_get(x, "profile", "type_") else None),
+        ("strategy_type", MetricClass.COUNT, lambda x: STRATEGY_TYPE_MAP.get(safe_get(x, "strategy", "type_"), None) if safe_get(x, "strategy", "type_") else None),
     ]
     kpi_classes = [
         ("inter_token_latency_ms", MetricClass.COUNT),
@@ -221,24 +277,57 @@ def parse_phase(results: Dict[str, Any], phase: Phase, period: Period):
             next_free_metric_idx += 1
 
     for kpi in kpi_classes:
+        if kpi[0] not in data:
+            continue
         metric_values = flatten_dict(data[kpi[0]], prefix=kpi[0])
         for name, value in metric_values:
             if value is None:
                 continue
+
+            # NEW FIX — skip dict/list/non-numeric values
+            if not isinstance(value, (int, float)):
+                continue
+
             metrics.append(Metric(next_free_metric_idx, Desc(kpi[1], "llm", safe_name(name)), {}))
             idx_map[name] = next_free_metric_idx
             pairs.append((name, float(value)))
             next_free_metric_idx += 1
 
+
+    # Map old run_stats field names to new scheduler_metrics field names
+    scheduler_metrics_mapping = {
+        "worker_start_delay_avg": "resolve_start_delay_avg",
+        "worker_start_time_targeted_delay_avg": "resolve_targeted_start_delay_avg",
+        "worker_time_avg": "resolve_time_avg",
+        "request_start_time_delay_avg": "request_start_delay_avg",
+        "request_start_time_targeted_delay_avg": "request_targeted_start_delay_avg",
+        "request_time_avg": "request_time_avg",
+        "request_time_delay_avg": "resolve_end_delay_avg",
+        "requests_made": "requests_made",
+        "scheduled_time_delay_avg": "processed_delay_avg",
+        "scheduled_time_sleep_avg": None,  # Not in new structure
+        "queued_time_avg": "queued_time_avg",
+    }
+
     for run_stat in run_stats_classes:
-        metric_values = flatten_dict(run_stats[run_stat[0]], prefix=run_stat[0])
-        for name, value in metric_values:
-            if value is None:
-                continue
-            metrics.append(Metric(next_free_metric_idx, Desc(run_stat[1], "llm", safe_name(name)), {}))
-            idx_map[name] = next_free_metric_idx
-            pairs.append((name, float(value)))
-            next_free_metric_idx += 1
+        old_name = run_stat[0]
+        new_name = scheduler_metrics_mapping.get(old_name)
+        if new_name is None:
+            # Field doesn't exist in new structure, skip
+            continue
+        if new_name not in scheduler_metrics:
+            continue
+        value = scheduler_metrics[new_name]
+        if value is None:
+            continue
+
+        if not isinstance(value, (int, float)):
+            continue
+
+        metrics.append(Metric(next_free_metric_idx, Desc(run_stat[1], "llm", safe_name(old_name)), {}))
+        idx_map[old_name] = next_free_metric_idx
+        pairs.append((old_name, float(value)))
+        next_free_metric_idx += 1
 
     with open(json_path, "w") as f:
         f.write(json.dumps([to_dict(metric) for metric in metrics], indent=4))
