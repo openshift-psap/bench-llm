@@ -96,6 +96,12 @@
                 ]
               },
               {
+                "arg": "guidellm_request_type",
+                "vals": [
+                  "text_completions"
+                ]
+              },
+              {
                 "arg": "guidellm_max_seconds",
                 "vals": [
                   "30"

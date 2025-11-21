@@ -110,6 +110,12 @@
                 ]
               },
               {
+                "arg": "guidellm_request_type",
+                "vals": [
+                  "text_completions"
+                ]
+              },
+              {
                 "arg": "guidellm_processor",
                 "vals": [
                   "ibm-granite/granite-3.2-2b-instruct"
