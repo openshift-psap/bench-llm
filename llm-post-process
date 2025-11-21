@@ -192,6 +192,7 @@ def parse_phase(results: Dict[str, Any], phase: Phase, period: Period):
     benchmark = results["benchmarks"][phase.idx]
 
     # Args are now at top level, but we also need config info from benchmark
+    # guidellm 0.4.0 and later
     top_level_args = results.get("args", {})
     config = benchmark.get("config", {})
 
@@ -313,7 +314,6 @@ def parse_phase(results: Dict[str, Any], phase: Phase, period: Period):
         old_name = run_stat[0]
         new_name = scheduler_metrics_mapping.get(old_name)
         if new_name is None:
-            # Field doesn't exist in new structure, skip
             continue
         if new_name not in scheduler_metrics:
             continue
